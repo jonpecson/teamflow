@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Link Detector Unit Tests</title>
+    <style>
+        body { font-family: monospace; background: #1a1d21; color: #e8e6e3; padding: 20px; }
+        .pass { color: #2ecc71; }
+        .fail { color: #e74c3c; }
+        h1 { font-size: 18px; margin-bottom: 16px; }
+        .result { margin: 4px 0; }
+        .summary { margin-top: 20px; padding: 12px; border: 1px solid #383a3e; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <h1>Link Detector Unit Tests</h1>
+    <div id="results"></div>
+    <div id="summary" class="summary"></div>
+
+    <script>
+    // Minimal esc() for testing
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // Copy detectLinks from app.js
+    function detectLinks(escaped) {
+        const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+        return escaped.replace(urlRegex, function(match) {
+            let url = match;
+            let trailing = '';
+            const openParens = (url.match(/\(/g) || []).length;
+            const closeParens = (url.match(/\)/g) || []).length;
+            while (url.length > 0) {
+                const last = url[url.length - 1];
+                if ('.,!?;:'.includes(last)) {
+                    trailing = last + trailing;
+                    url = url.slice(0, -1);
+                } else if (last === ')' && closeParens > openParens) {
+                    trailing = last + trailing;
+                    url = url.slice(0, -1);
+                    break;
+                } else if (last === ']') {
+                    trailing = last + trailing;
+                    url = url.slice(0, -1);
+                } else {
+                    break;
+                }
+            }
+            let href = url;
+            if (href.match(/^www\./i)) { href = 'https://' + href; }
+            if (!href.match(/^https?:\/\//i)) { return match; }
+            let display = url;
+            if (display.length > 60) { display = display.substring(0, 57) + '...'; }
+            return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="msg-link">${display}</a>${trailing}`;
+        });
+    }
+
+    let passed = 0, failed = 0;
+    const results = document.getElementById('results');
+
+    function assert(name, input, expected) {
+        const escaped = esc(input);
+        const output = detectLinks(escaped);
+        const ok = output === expected;
+        if (ok) { passed++; } else { failed++; }
+        const div = document.createElement('div');
+        div.className = 'result ' + (ok ? 'pass' : 'fail');
+        div.textContent = (ok ? 'PASS' : 'FAIL') + ' ' + name;
+        if (!ok) {
+            const detail = document.createElement('div');
+            detail.style.cssText = 'font-size:11px;color:#9b9d9f;margin:2px 0 8px 24px;white-space:pre-wrap';
+            detail.textContent = `  input:    ${input}\n  expected: ${expected}\n  got:      ${output}`;
+            div.appendChild(detail);
+        }
+        results.appendChild(div);
+    }
+
+    function link(url, display, href) {
+        if (!href) href = url;
+        if (!display) display = url;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="msg-link">${display}</a>`;
+    }
+
+    // ── Basic URL Detection ──
+    assert('T01: Simple https URL',
+        'Check https://example.com',
+        `Check ${link('https://example.com')}`);
+
+    assert('T02: Simple http URL',
+        'Visit http://localhost:3000',
+        `Visit ${link('http://localhost:3000')}`);
+
+    assert('T03: www URL gets https scheme',
+        'Go to www.github.com',
+        `Go to ${link('www.github.com', 'www.github.com', 'https://www.github.com')}`);
+
+    assert('T04: URL with path',
+        'See https://docs.rs/axum/latest/axum/',
+        `See ${link('https://docs.rs/axum/latest/axum/')}`);
+
+    assert('T05: URL with query string',
+        'Search https://google.com/search?q=rust+lang&hl=en',
+        `Search ${link('https://google.com/search?q=rust+lang&amp;hl=en')}`);
+
+    assert('T06: URL with fragment',
+        'Read https://doc.rust-lang.org/book/ch01-01-installation.html#installation',
+        `Read ${link('https://doc.rust-lang.org/book/ch01-01-installation.html#installation', 'https://doc.rust-lang.org/book/ch01-01-installation.htm...')}`);
+
+    // ── Trailing Punctuation ──
+    assert('T07: URL followed by period',
+        'Visit https://example.com.',
+        `Visit ${link('https://example.com')}.`);
+
+    assert('T08: URL followed by comma',
+        'Links: https://a.com, https://b.com',
+        `Links: ${link('https://a.com')}, ${link('https://b.com')}`);
+
+    assert('T09: URL followed by exclamation',
+        'Wow https://cool.io!',
+        `Wow ${link('https://cool.io')}!`);
+
+    assert('T10: URL followed by question mark',
+        'Is it https://example.com?',
+        `Is it ${link('https://example.com')}?`);
+
+    // ── Balanced Parentheses ──
+    assert('T11: Wikipedia URL with parens',
+        'https://en.wikipedia.org/wiki/Rust_(programming_language)',
+        link('https://en.wikipedia.org/wiki/Rust_(programming_language)', 'https://en.wikipedia.org/wiki/Rust_(programming_langua...'));
+
+    assert('T12: URL in parentheses — trailing paren stripped',
+        '(see https://example.com)',
+        `(see ${link('https://example.com')})`);
+
+    // ── Multiple URLs ──
+    assert('T13: Two URLs in one message',
+        'Try https://a.com and https://b.com',
+        `Try ${link('https://a.com')} and ${link('https://b.com')}`);
+
+    // ── No false positives ──
+    assert('T14: Bare domain not linked',
+        'Visit example.com for info',
+        'Visit example.com for info');
+
+    assert('T15: Plain text stays plain',
+        'Hello world, no links here!',
+        'Hello world, no links here!');
+
+    assert('T16: Email-like text not linked',
+        'Contact user@example.com',
+        'Contact user@example.com');
+
+    // ── Long URL Truncation ──
+    assert('T17: Long URL truncated in display',
+        'https://example.com/very/long/path/that/exceeds/sixty/characters/in/total/length',
+        link('https://example.com/very/long/path/that/exceeds/sixty/characters/in/total/length', 'https://example.com/very/long/path/that/exceeds/sixty/...'));
+
+    // ── URL at boundaries ──
+    assert('T18: URL at start of message',
+        'https://start.com is great',
+        `${link('https://start.com')} is great`);
+
+    assert('T19: URL at end of message',
+        'Check this: https://end.com',
+        `Check this: ${link('https://end.com')}`);
+
+    assert('T20: URL is the entire message',
+        'https://only.com/path',
+        link('https://only.com/path'));
+
+    // ── HTML safety ──
+    assert('T21: HTML in URL is escaped',
+        'https://evil.com/<script>alert(1)</script>',
+        link('https://evil.com/&lt;script&gt;alert(1)&lt;/script&gt;', 'https://evil.com/&lt;script&gt;alert(1)&lt;/script&gt;'));
+
+    assert('T22: XSS attempt in text around URL',
+        '<img onerror=alert(1)> https://safe.com',
+        `&lt;img onerror=alert(1)&gt; ${link('https://safe.com')}`);
+
+    // ── Summary ──
+    const summary = document.getElementById('summary');
+    const total = passed + failed;
+    summary.innerHTML = `<span class="${failed === 0 ? 'pass' : 'fail'}">${total} tests: ${passed} passed, ${failed} failed</span>`;
+    summary.className = 'summary ' + (failed === 0 ? 'pass' : 'fail');
+
+    // For headless testing: log to console
+    console.log(`LINK_TEST_RESULTS: ${passed}/${total} passed, ${failed} failed`);
+    if (failed > 0) console.error('LINK_TESTS_FAILED');
+    </script>
+</body>
+</html>

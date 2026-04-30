@@ -1,0 +1,23 @@
+# Rust
+/target
+src-tauri/target/
+
+# Node
+node_modules/
+
+# Environment
+.env
+
+# Editor
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Landing DMG (too large for git)
+landing/*.dmg
+
+# Static build output (regenerated)
+static/assets/
