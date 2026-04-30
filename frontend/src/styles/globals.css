@@ -91,6 +91,7 @@ a:hover { text-decoration: underline; }
 .auth-logo { margin-bottom: 8px; }
 .auth-logo img, .auth-logo svg { max-height: 56px; }
 .auth-subtitle { color: var(--text-secondary); margin-bottom: 28px; font-size: 15px; }
+.auth-version { margin-top: 20px; font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; }
 .auth-tabs {
   display: flex; margin-bottom: 24px;
   background: rgba(255,255,255,0.06);

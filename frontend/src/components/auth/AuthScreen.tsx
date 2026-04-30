@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
+const APP_VERSION = '0.1.0';
+
 export default function AuthScreen() {
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       if (tab === 'login') {
         await login(username, password);
@@ -19,7 +23,18 @@ export default function AuthScreen() {
         await register(username, password, inviteCode || undefined);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      if (err instanceof Error) {
+        // Improve error messages for common cases
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError('Cannot connect to server. Is the backend running?');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Something went wrong');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,10 +49,10 @@ export default function AuthScreen() {
         </div>
         <p className="auth-subtitle">Fast chat for small teams</p>
         <div className="auth-tabs">
-          <button className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => setTab('login')}>Sign In</button>
-          <button className={`tab ${tab === 'register' ? 'active' : ''}`} onClick={() => setTab('register')}>Sign Up</button>
+          <button type="button" className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError(''); }}>Sign In</button>
+          <button type="button" className={`tab ${tab === 'register' ? 'active' : ''}`} onClick={() => { setTab('register'); setError(''); }}>Sign Up</button>
         </div>
-        <form id="auth-form" autoComplete="off" onSubmit={handleSubmit}>
+        <form id="auth-form" autoComplete="off" onSubmit={handleSubmit} noValidate>
           <input
             type="text"
             placeholder="Username"
@@ -63,9 +78,12 @@ export default function AuthScreen() {
               onChange={(e) => setInviteCode(e.target.value)}
             />
           )}
-          <button type="submit" id="auth-submit">{tab === 'login' ? 'Sign In' : 'Sign Up'}</button>
+          <button type="submit" id="auth-submit" disabled={loading}>
+            {loading ? 'Connecting...' : tab === 'login' ? 'Sign In' : 'Sign Up'}
+          </button>
           {error && <p className="error">{error}</p>}
         </form>
+        <div className="auth-version">v{APP_VERSION}</div>
       </div>
     </div>
   );
