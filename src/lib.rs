@@ -1,3 +1,4 @@
+pub mod audit;
 pub mod auth;
 pub mod calls;
 pub mod channels;
@@ -5,6 +6,7 @@ pub mod config;
 pub mod crypto;
 pub mod error;
 pub mod invites;
+pub mod mfa;
 pub mod push;
 pub mod state;
 pub mod ws;
@@ -102,6 +104,10 @@ fn build_router(state: AppState, static_path: &str) -> Router {
     let api = Router::new()
         .route("/auth/register", post(auth::handlers::register))
         .route("/auth/login", post(auth::handlers::login))
+        // HIPAA: MFA endpoints
+        .route("/mfa/setup", post(mfa::handlers::setup_mfa))
+        .route("/mfa/verify", post(mfa::handlers::verify_mfa))
+        .route("/mfa/validate", post(mfa::handlers::validate_mfa))
         .route("/channels", get(channels::handlers::list_channels))
         .route("/channels", post(channels::handlers::create_channel))
         .route("/channels/mine", get(channels::handlers::my_channels))

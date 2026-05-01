@@ -212,6 +212,9 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 }
             };
 
+            // HIPAA: Audit log message send (metadata only, NOT content)
+            crate::audit::log_message_send(&state.db, user_id, channel_id).await;
+
             let server_msg = ServerMsg::Message {
                 id: msg_id,
                 channel_id,

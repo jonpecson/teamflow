@@ -87,7 +87,7 @@ pub async fn register(
     .await
     .map_err(|e| match e {
         sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-            AppError::BadRequest("Username already taken".into())
+            AppError::BadRequest("Registration failed".into())
         }
         _ => AppError::Db(e),
     })?;
@@ -122,32 +122,81 @@ pub async fn register(
 pub async fn login(
     State(state): State<AppState>,
     Json(body): Json<LoginReq>,
-) -> Result<Json<AuthResp>, AppError> {
-    let row = sqlx::query_as::<_, (uuid::Uuid, String, String)>(
-        "SELECT id, username, password_hash FROM users WHERE username = $1",
+) -> Result<Json<serde_json::Value>, AppError> {
+    // HIPAA: Generic error message prevents username enumeration [M3]
+    let auth_error = || AppError::Auth("Authentication failed".into());
+
+    let row = sqlx::query_as::<_, (uuid::Uuid, String, String, bool, i32, Option<chrono::DateTime<chrono::Utc>>)>(
+        "SELECT id, username, password_hash, COALESCE(mfa_enabled, false), \
+         COALESCE(failed_login_attempts, 0), locked_until \
+         FROM users WHERE username = $1",
     )
     .bind(&body.username)
     .fetch_optional(&state.db)
     .await?
-    .ok_or_else(|| AppError::Auth("Invalid username or password".into()))?;
+    .ok_or_else(auth_error)?;
 
-    let parsed_hash =
-        PasswordHash::new(&row.2).map_err(|e| AppError::Auth(format!("Hash parse error: {e}")))?;
+    let (user_id, username, hash, mfa_enabled, failed_attempts, locked_until) =
+        (row.0, row.1, row.2, row.3, row.4, row.5);
 
-    Argon2::default()
+    // HIPAA: Account lockout after 5 failed attempts [H2/4.2]
+    if let Some(locked) = locked_until {
+        if locked > chrono::Utc::now() {
+            crate::audit::log_login(&state.db, user_id, &username, false, None).await;
+            return Err(AppError::Auth("Account temporarily locked. Try again later.".into()));
+        }
+    }
+
+    // Verify password
+    let parsed_hash = PasswordHash::new(&hash).map_err(|_| auth_error())?;
+    if Argon2::default()
         .verify_password(body.password.as_bytes(), &parsed_hash)
-        .map_err(|_| AppError::Auth("Invalid username or password".into()))?;
+        .is_err()
+    {
+        // Increment failed attempts
+        let new_attempts = failed_attempts + 1;
+        let lock_until = if new_attempts >= 5 {
+            Some(chrono::Utc::now() + chrono::Duration::minutes(15))
+        } else {
+            None
+        };
+        let _ = sqlx::query(
+            "UPDATE users SET failed_login_attempts = $1, locked_until = $2 WHERE id = $3",
+        )
+        .bind(new_attempts)
+        .bind(lock_until)
+        .bind(user_id)
+        .execute(&state.db)
+        .await;
 
-    let token = sign_token(
-        row.0,
-        &row.1,
-        &state.config.jwt_secret,
-        state.config.jwt_expiry_secs,
-    );
+        crate::audit::log_login(&state.db, user_id, &username, false, None).await;
+        return Err(auth_error());
+    }
 
-    Ok(Json(AuthResp {
-        token,
-        user_id: row.0,
-        username: row.1,
-    }))
+    // Reset failed attempts on success
+    let _ = sqlx::query(
+        "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1",
+    )
+    .bind(user_id)
+    .execute(&state.db)
+    .await;
+
+    // HIPAA: Check if MFA is required [H2]
+    if mfa_enabled {
+        crate::audit::log_login(&state.db, user_id, &username, true, None).await;
+        return Ok(Json(serde_json::json!({
+            "mfa_required": true,
+            "user_id": user_id,
+        })));
+    }
+
+    // No MFA — issue token directly
+    let token = sign_token(user_id, &username, &state.config.jwt_secret, state.config.jwt_expiry_secs);
+    crate::audit::log_login(&state.db, user_id, &username, true, None).await;
+
+    Ok(Json(serde_json::json!({
+        "token": token,
+        "user_id": user_id,
+        "username": username,
+    })))
 }
