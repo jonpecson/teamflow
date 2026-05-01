@@ -40,3 +40,4 @@ hex = "0.4"
 tower = { version = "0.5", features = ["util"] }
 axum-extra = { version = "0.10", features = ["cookie"] }
 totp-rs = { version = "5", features = ["gen_secret", "otpauth"] }
+sha1_smol = "1"
