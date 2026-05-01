@@ -171,14 +171,37 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 }
             }
 
-            let row = sqlx::query_as::<_, (Uuid, chrono::DateTime<chrono::Utc>)>(
-                "INSERT INTO messages (channel_id, user_id, content) VALUES ($1, $2, $3) RETURNING id, created_at",
-            )
-            .bind(channel_id)
-            .bind(user_id)
-            .bind(&content)
-            .fetch_one(&state.db)
-            .await;
+            // HIPAA: Encrypt message content before storing
+            let row = if let Some(ref key) = state.config.message_encryption_key {
+                match crate::crypto::encrypt(&content, key) {
+                    Ok((ciphertext, nonce)) => {
+                        sqlx::query_as::<_, (Uuid, chrono::DateTime<chrono::Utc>)>(
+                            "INSERT INTO messages (channel_id, user_id, content, content_encrypted, content_nonce, encrypted) VALUES ($1, $2, '', $3, $4, true) RETURNING id, created_at",
+                        )
+                        .bind(channel_id)
+                        .bind(user_id)
+                        .bind(&ciphertext)
+                        .bind(&nonce)
+                        .fetch_one(&state.db)
+                        .await
+                    }
+                    Err(e) => {
+                        tracing::error!("Message encryption failed: {e}");
+                        send_error(state, user_id, "Failed to send message");
+                        return;
+                    }
+                }
+            } else {
+                // Fallback: store plaintext if no encryption key configured
+                sqlx::query_as::<_, (Uuid, chrono::DateTime<chrono::Utc>)>(
+                    "INSERT INTO messages (channel_id, user_id, content) VALUES ($1, $2, $3) RETURNING id, created_at",
+                )
+                .bind(channel_id)
+                .bind(user_id)
+                .bind(&content)
+                .fetch_one(&state.db)
+                .await
+            };
 
             let (msg_id, created_at) = match row {
                 Ok(r) => r,
@@ -345,26 +368,31 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 }, Some(user_id)).await;
             }
         }
-        // WebRTC signaling — relay to target user
+        // WebRTC signaling — relay to target user (no participant check — signals must flow freely)
         ClientMsg::RtcSignal { meeting_id, target_user, signal_type, data } => {
-            if validate_call_participant(state, &meeting_id, user_id).is_some() {
-                // Find target user's UUID by username
-                if let Ok(Some((target_uid,))) = sqlx::query_as::<_, (Uuid,)>(
-                    "SELECT id FROM users WHERE username = $1",
-                )
-                .bind(&target_user)
-                .fetch_optional(&state.db)
-                .await
-                {
-                    if let Some(sender) = state.connections.get(&target_uid) {
-                        let _ = sender.send(ServerMsg::RtcSignal {
-                            meeting_id,
-                            from_user: username.to_string(),
-                            signal_type,
-                            data,
-                        });
-                    }
+            if let Ok(Some((target_uid,))) = sqlx::query_as::<_, (Uuid,)>(
+                "SELECT id FROM users WHERE username = $1",
+            )
+            .bind(&target_user)
+            .fetch_optional(&state.db)
+            .await
+            {
+                if let Some(sender) = state.connections.get(&target_uid) {
+                    tracing::info!(
+                        from = %username, to = %target_user,
+                        signal = %signal_type, "Relaying RTC signal"
+                    );
+                    let _ = sender.send(ServerMsg::RtcSignal {
+                        meeting_id,
+                        from_user: username.to_string(),
+                        signal_type,
+                        data,
+                    });
+                } else {
+                    tracing::warn!(target = %target_user, uid = %target_uid, "RTC signal target not connected");
                 }
+            } else {
+                tracing::warn!(target = %target_user, "RTC signal target user not found in DB");
             }
         }
     }

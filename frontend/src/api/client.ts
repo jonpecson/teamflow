@@ -1,4 +1,7 @@
-const BASE = '/api';
+// In Tauri production mode, files are served from tauri:// protocol,
+// so API calls need an absolute URL to the cloud backend.
+const isTauri = window.location.protocol === 'tauri:' || (window.location.protocol === 'https:' && window.location.hostname === 'tauri.localhost');
+const BASE = isTauri ? 'https://teamflow.statlingo.ai/api' : '/api';
 
 function getToken(): string | null {
   return localStorage.getItem('token');

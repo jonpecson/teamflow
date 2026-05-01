@@ -84,7 +84,7 @@ function CallSystemMessage({ caller, meetingId, type, time }: { caller: string; 
       </div>
       <div className="call-system-content">
         <span className="call-system-text">
-          {isMe ? 'You' : caller} started a call
+          {caller} started a call
         </span>
         <span className="call-system-time">{time}</span>
         {isActive && call && (

@@ -123,6 +123,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'ADD_MESSAGE': {
       const msgs = new Map(state.messages);
       const existing = msgs.get(action.message.channel_id) || [];
+      // Deduplicate by id (system messages can arrive from both local dispatch and WS)
+      if (existing.some((m) => m.id === action.message.id)) return state;
       msgs.set(action.message.channel_id, [...existing, action.message]);
       return { ...state, messages: msgs };
     }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAppState, useAppDispatch } from '../context/AppContext';
 import { SoundEngine } from '../utils/sounds';
+import { notifyMessage, notifyCallStarted, notifyCallJoined } from '../utils/notifications';
 import type { WsServerMsg } from '../api/types';
 
 type RtcSignalHandler = (fromUser: string, signalType: string, data: unknown) => void;
@@ -28,8 +29,10 @@ export function useWebSocket() {
   useEffect(() => {
     if (!token) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
+    const isTauri = window.location.protocol === 'tauri:' || (window.location.protocol === 'https:' && window.location.hostname === 'tauri.localhost');
+    const wsUrl = isTauri
+      ? `wss://teamflow.statlingo.ai/ws?token=${token}`
+      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=${token}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -59,6 +62,7 @@ export function useWebSocket() {
           });
           if (msg.channel_id !== currentChannelRef.current) {
             dispatch({ type: 'INCREMENT_UNREAD', channelId: msg.channel_id });
+            notifyMessage(msg.username, msg.content, msg.channel_id);
           }
           SoundEngine.playMessage();
           break;
@@ -87,7 +91,8 @@ export function useWebSocket() {
           dispatch({ type: 'ADD_MY_CHANNEL', channelId: msg.channel_id });
           break;
 
-        case 'call_started':
+        case 'call_started': {
+          // Deduplicate: CALL_STARTED is idempotent (won't add if already exists)
           dispatch({
             type: 'CALL_STARTED',
             call: {
@@ -99,7 +104,7 @@ export function useWebSocket() {
               started_at: new Date().toISOString(),
             },
           });
-          // Add a system message to the channel chat
+          // Add system message (id-based, won't duplicate if already added by startCall)
           dispatch({
             type: 'ADD_MESSAGE',
             message: {
@@ -112,7 +117,9 @@ export function useWebSocket() {
             },
           });
           SoundEngine.playTone(880, 0.15, 0.1);
+          notifyCallStarted(msg.started_by, msg.channel_name);
           break;
+        }
 
         case 'call_ended':
           dispatch({ type: 'CALL_ENDED', meetingId: msg.meeting_id });
@@ -133,6 +140,7 @@ export function useWebSocket() {
         case 'call_participant_joined':
           dispatch({ type: 'CALL_PARTICIPANT_JOINED', meetingId: msg.meeting_id, username: msg.username });
           SoundEngine.playJoin();
+          notifyCallJoined(msg.username, msg.channel_id || '');
           break;
 
         case 'call_participant_left':

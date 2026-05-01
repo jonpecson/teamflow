@@ -9,11 +9,14 @@ import DmList from '../channels/DmList';
 import OnlineList from '../users/OnlineList';
 
 interface SidebarProps {
+  isOpen: boolean;
+  onToggle: () => void;
   onShowCreateChannel: () => void;
   onShowInviteCode: () => void;
+  onChannelSelect: () => void;
 }
 
-export default function Sidebar({ onShowCreateChannel, onShowInviteCode }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowInviteCode, onChannelSelect }: SidebarProps) {
   const { username, logout } = useAuth();
   const { channels, dmChannels, myChannelIds, currentChannelId, selectChannel } = useChannels();
   const { onlineUsers } = usePresence();
@@ -29,20 +32,32 @@ export default function Sidebar({ onShowCreateChannel, onShowInviteCode }: Sideb
     ? dmChannels.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
     : dmChannels;
 
+  const handleSelectChannel = (id: string) => {
+    selectChannel(id);
+    onChannelSelect();
+  };
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       {/* Header */}
-      <div className="sidebar-header">
+      <div className="sidebar-header" onClick={onToggle}>
         <div className="sidebar-brand">
           <img src="/images/logo.svg" alt="TF" />
           <span>TeamFlow</span>
         </div>
-        <button className="sidebar-compose" title="New message" onClick={onShowCreateChannel}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="sidebar-compose" title="New message" onClick={(e) => { e.stopPropagation(); onShowCreateChannel(); }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button className="sidebar-compose mobile-menu-btn" title="Menu" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {isOpen ? <path d="M18 6L6 18M6 6l12 12"/> : <path d="M3 12h18M3 6h18M3 18h18"/>}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -64,7 +79,7 @@ export default function Sidebar({ onShowCreateChannel, onShowInviteCode }: Sideb
             currentChannelId={currentChannelId}
             unreadCounts={state.unreadCounts}
             activeCalls={state.activeCalls}
-            onSelect={selectChannel}
+            onSelect={handleSelectChannel}
           />
         </div>
 
@@ -77,7 +92,7 @@ export default function Sidebar({ onShowCreateChannel, onShowInviteCode }: Sideb
             currentChannelId={currentChannelId}
             unreadCounts={state.unreadCounts}
             username={username || ''}
-            onSelect={selectChannel}
+            onSelect={handleSelectChannel}
           />
         </div>
 

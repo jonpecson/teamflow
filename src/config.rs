@@ -14,6 +14,7 @@ pub struct Config {
     pub call_rate_limit_per_min: usize,
     pub call_max_duration_secs: u64,
     pub call_disconnect_grace_secs: u64,
+    pub message_encryption_key: Option<String>,
 }
 
 impl Config {
@@ -57,6 +58,7 @@ impl Config {
                 .unwrap_or_else(|_| "30".into())
                 .parse()
                 .unwrap_or(30),
+            message_encryption_key: env::var("MESSAGE_ENCRYPTION_KEY").ok(),
         }
     }
 }

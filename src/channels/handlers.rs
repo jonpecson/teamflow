@@ -371,8 +371,10 @@ pub async fn channel_history(
     let limit = params.limit.unwrap_or(50).min(200);
     let before = params.before.unwrap_or_else(|| Utc::now() + chrono::Duration::days(1));
 
-    let rows = sqlx::query_as::<_, (Uuid, Uuid, Uuid, String, String, DateTime<Utc>)>(
-        "SELECT m.id, m.channel_id, m.user_id, u.username, m.content, m.created_at \
+    // HIPAA: Fetch with encrypted content support
+    let rows = sqlx::query_as::<_, (Uuid, Uuid, Uuid, String, String, Option<String>, Option<String>, Option<bool>, DateTime<Utc>)>(
+        "SELECT m.id, m.channel_id, m.user_id, u.username, m.content, \
+         m.content_encrypted, m.content_nonce, m.encrypted, m.created_at \
          FROM messages m JOIN users u ON u.id = m.user_id \
          WHERE m.channel_id = $1 AND m.created_at < $2 \
          ORDER BY m.created_at DESC LIMIT $3",
@@ -383,15 +385,31 @@ pub async fn channel_history(
     .fetch_all(&state.db)
     .await?;
 
+    let enc_key = state.config.message_encryption_key.as_deref();
+
     let mut messages: Vec<MessageResp> = rows
         .into_iter()
-        .map(|r| MessageResp {
-            id: r.0,
-            channel_id: r.1,
-            user_id: r.2,
-            username: r.3,
-            content: r.4,
-            created_at: r.5,
+        .map(|r| {
+            let is_encrypted = r.7.unwrap_or(false);
+            let content = if is_encrypted {
+                match (&r.5, &r.6, enc_key) {
+                    (Some(ct), Some(nonce), Some(key)) => {
+                        crate::crypto::decrypt(ct, nonce, key)
+                            .unwrap_or_else(|_| "[encrypted]".to_string())
+                    }
+                    _ => "[encrypted]".to_string(),
+                }
+            } else {
+                r.4.clone()
+            };
+            MessageResp {
+                id: r.0,
+                channel_id: r.1,
+                user_id: r.2,
+                username: r.3,
+                content,
+                created_at: r.8,
+            }
         })
         .collect();
 

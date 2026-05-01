@@ -1,13 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicorevin/tauri/refs/heads/dev/crates/tauri-cli/schema.json",
   "productName": "TeamFlow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "com.teamflow.desktop",
   "build": {
-    "frontendDist": "../static",
-    "devUrl": "http://localhost:8080",
+    "frontendDist": "https://teamflow.statlingo.ai",
+    "devUrl": "https://teamflow.statlingo.ai",
     "beforeDevCommand": "",
-    "beforeBuildCommand": "cd ../frontend && npm run build"
+    "beforeBuildCommand": ""
   },
   "app": {
     "withGlobalTauri": false,
@@ -25,7 +25,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src * wss: ws: https: http:; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
     }
   },
   "bundle": {
@@ -40,7 +40,8 @@
     ],
     "macOS": {
       "entitlements": "./Entitlements.plist",
-      "infoPlist": "./Info.plist"
+      "infoPlist": "./Info.plist",
+      "signingIdentity": "Developer ID Application: John Anthony Pecson (R4DHNFSJKM)"
     }
   }
 }

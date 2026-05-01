@@ -6,4 +6,6 @@ pub mod mock_provider;
 pub mod provider;
 pub mod rate_limit;
 pub mod repository;
+#[cfg(test)]
+mod signal_tests;
 pub mod state;

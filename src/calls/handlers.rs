@@ -160,8 +160,8 @@ pub async fn start_call(
         channel_name,
     };
 
-    // Exclude the caller — they already know they started the call
-    broadcast_call_event_excluding(&state, body.channel_id, call_msg, Some(claims.sub)).await;
+    // Broadcast to all channel members (caller's other devices need it too)
+    broadcast_call_event(&state, body.channel_id, call_msg).await;
 
     Ok((
         StatusCode::CREATED,

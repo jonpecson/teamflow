@@ -1,0 +1,660 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0139D2A8F10A84D07335120A /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58918ACA67B9D566DFA1E765 /* MainView.swift */; };
+		0C4EFEF239A94A43F4BC82C7 /* VideoRendererView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B10AA4A1D4A6F990649A23B /* VideoRendererView.swift */; };
+		0E9D8F61ED57CB4CBFF827DE /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49A3B7595007447EFADA0B0 /* KeychainHelper.swift */; };
+		0EBD523A932275E1696D767B /* PeerConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAF5067D709A5E7EFC32B91 /* PeerConnectionManager.swift */; };
+		0FB447ABD975AF9904108D0E /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E73036B6E90EEE023E80660 /* Channel.swift */; };
+		11AFB4B2E50DF82D2DE8DCDA /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3F60FAF1B60D468E083161 /* SidebarView.swift */; };
+		12F751A181628889B258AD99 /* WebSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E025CA463239EFB3EFBB5FE /* WebSocketService.swift */; };
+		20756C9D2FE959D82DF3606D /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50D86DF36FA3C43361FCDBE4 /* AuthService.swift */; };
+		232DF5E607628A0DE81C12B8 /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E73036B6E90EEE023E80660 /* Channel.swift */; };
+		27C7139AAFF3D074F52703FE /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10F91BF5CE3B715CFD5192E8 /* LoginView.swift */; };
+		304AEAB9576114C90DCD2FC9 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10F91BF5CE3B715CFD5192E8 /* LoginView.swift */; };
+		39B65F58BC91B90A558C25E7 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369B33E12BE676215AD11CEC /* APIClient.swift */; };
+		3A425EC31A95BB3C0DC3EB88 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0CBA2CC526A4924455A7AC /* AuthViewModel.swift */; };
+		3D29895AEE1247AE8C88EE7D /* WebRTCCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84BCD66C3599C2FEA025038D /* WebRTCCompat.swift */; };
+		437B1AA4C2AC7861CAA99671 /* LiveKitWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 7BF3D6475F37F96AAACA278E /* LiveKitWebRTC */; };
+		4BC315B822171479E460480D /* VideoRendererView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B10AA4A1D4A6F990649A23B /* VideoRendererView.swift */; };
+		4DEE90B75687DA4E81D6817B /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369B33E12BE676215AD11CEC /* APIClient.swift */; };
+		5552F1A68BAC8D3FB1B51B9F /* TeamFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2767463B867ABC59EA6D8821 /* TeamFlowApp.swift */; };
+		5A9F86C9280BF934A37DF10E /* NewDmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14762C0DC0B513538E4910 /* NewDmSheet.swift */; };
+		5B3F25E278808300727674FB /* CallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEB76E08DCDBCBD71907FE4 /* CallView.swift */; };
+		5D17CC28FD4AE6E789FC01E4 /* ChannelListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410D5C53ECE00E1FEC562887 /* ChannelListViewModel.swift */; };
+		5E079A638BA244D96FD43EE5 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0CBA2CC526A4924455A7AC /* AuthViewModel.swift */; };
+		62A53305F110D89340E1FE65 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08B89E24697DCD3E8D6A2F2 /* Message.swift */; };
+		676F945FC7601AFC36401278 /* MessageListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9150E209C7465BC909A400C5 /* MessageListViewModel.swift */; };
+		6F449D57C3A57F2C8E9F8A56 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08B89E24697DCD3E8D6A2F2 /* Message.swift */; };
+		723EF5B6B37ED4F2326E773B /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10700DEDD6A7149B2D0D0359 /* User.swift */; };
+		762955F0DECDCB0B41CDC293 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58918ACA67B9D566DFA1E765 /* MainView.swift */; };
+		77BD1E6670311BB24B2A42C9 /* Call.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5410051910E396776C442F3 /* Call.swift */; };
+		7F23A4C2667DEE0991F4EF75 /* TeamFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2767463B867ABC59EA6D8821 /* TeamFlowApp.swift */; };
+		88F6ADCD21252144BD617ABB /* WebRTCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8EE01DDFCEC0FBCC0992B6C /* WebRTCClient.swift */; };
+		8D903771D26D545035431984 /* WebRTCCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84BCD66C3599C2FEA025038D /* WebRTCCompat.swift */; };
+		981FA77F36A0E2ACEB3E5397 /* WebRTCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8EE01DDFCEC0FBCC0992B6C /* WebRTCClient.swift */; };
+		9C26A826A7F9B5B6BDE559F0 /* WebSocketMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C158D23F7DC11389CD04AA58 /* WebSocketMessage.swift */; };
+		A363B93F03DB3ECDEA4B57EB /* ChannelListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410D5C53ECE00E1FEC562887 /* ChannelListViewModel.swift */; };
+		A8D44FB2200613715152023B /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49A3B7595007447EFADA0B0 /* KeychainHelper.swift */; };
+		A8F31B0D45B04F6C4DC8FE83 /* CreateChannelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E023405500007217392447DB /* CreateChannelSheet.swift */; };
+		ACA511776E9FD805F824E351 /* WebSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E025CA463239EFB3EFBB5FE /* WebSocketService.swift */; };
+		AE54C992F3F9DA57F8064C48 /* WebSocketMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C158D23F7DC11389CD04AA58 /* WebSocketMessage.swift */; };
+		AFEA919AE696012CA40A2BCA /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50D86DF36FA3C43361FCDBE4 /* AuthService.swift */; };
+		B6ADEE1AD398F56F0E143AB2 /* LiveKitWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = B3A3B4B395D9DB97EB986DAD /* LiveKitWebRTC */; };
+		B8605402D7513B54B306B43C /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3F60FAF1B60D468E083161 /* SidebarView.swift */; };
+		B91C9478243B976F92141C47 /* MessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7BCB16CDD13B06C57EC3E05 /* MessageRow.swift */; };
+		BEFCBA127DD49347B767E3BB /* CallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEB76E08DCDBCBD71907FE4 /* CallView.swift */; };
+		C44D7B8CBB874DC0405D4FD1 /* MessageListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9150E209C7465BC909A400C5 /* MessageListViewModel.swift */; };
+		D6F3E19CD994D25FE41C76E8 /* CreateChannelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E023405500007217392447DB /* CreateChannelSheet.swift */; };
+		DA1562753E74CB60D6A0E0E1 /* PeerConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAF5067D709A5E7EFC32B91 /* PeerConnectionManager.swift */; };
+		DD2420CECB1D8E61C5593AA9 /* NewDmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14762C0DC0B513538E4910 /* NewDmSheet.swift */; };
+		E35A8B090643F82C5D90304D /* Call.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5410051910E396776C442F3 /* Call.swift */; };
+		EA7D95FB741E8BBB6BC07E12 /* MessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7BCB16CDD13B06C57EC3E05 /* MessageRow.swift */; };
+		EB2A471A6276EE67D1714C93 /* CallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FE34EE7F2C20A152DB71F1 /* CallViewModel.swift */; };
+		EFA92862D408088341D4FF9F /* CallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FE34EE7F2C20A152DB71F1 /* CallViewModel.swift */; };
+		F92638B2DCCDB7EC73921EB2 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10700DEDD6A7149B2D0D0359 /* User.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0DB7120B0F3F18E678F10AEC /* TeamFlow-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TeamFlow-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		10700DEDD6A7149B2D0D0359 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		10F91BF5CE3B715CFD5192E8 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		2767463B867ABC59EA6D8821 /* TeamFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamFlowApp.swift; sourceTree = "<group>"; };
+		323B2E748B996D59FADD0FE1 /* TeamFlow-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "TeamFlow-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		369B33E12BE676215AD11CEC /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		3B10AA4A1D4A6F990649A23B /* VideoRendererView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRendererView.swift; sourceTree = "<group>"; };
+		3E73036B6E90EEE023E80660 /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channel.swift; sourceTree = "<group>"; };
+		410D5C53ECE00E1FEC562887 /* ChannelListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelListViewModel.swift; sourceTree = "<group>"; };
+		50D86DF36FA3C43361FCDBE4 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		58918ACA67B9D566DFA1E765 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		7E025CA463239EFB3EFBB5FE /* WebSocketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketService.swift; sourceTree = "<group>"; };
+		84BCD66C3599C2FEA025038D /* WebRTCCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCCompat.swift; sourceTree = "<group>"; };
+		9150E209C7465BC909A400C5 /* MessageListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListViewModel.swift; sourceTree = "<group>"; };
+		9C3F60FAF1B60D468E083161 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		A49A3B7595007447EFADA0B0 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		A8EE01DDFCEC0FBCC0992B6C /* WebRTCClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCClient.swift; sourceTree = "<group>"; };
+		ACEB76E08DCDBCBD71907FE4 /* CallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallView.swift; sourceTree = "<group>"; };
+		AFAF5067D709A5E7EFC32B91 /* PeerConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerConnectionManager.swift; sourceTree = "<group>"; };
+		C158D23F7DC11389CD04AA58 /* WebSocketMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketMessage.swift; sourceTree = "<group>"; };
+		C5410051910E396776C442F3 /* Call.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Call.swift; sourceTree = "<group>"; };
+		C7BCB16CDD13B06C57EC3E05 /* MessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageRow.swift; sourceTree = "<group>"; };
+		D5FE34EE7F2C20A152DB71F1 /* CallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallViewModel.swift; sourceTree = "<group>"; };
+		DC14762C0DC0B513538E4910 /* NewDmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewDmSheet.swift; sourceTree = "<group>"; };
+		E023405500007217392447DB /* CreateChannelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateChannelSheet.swift; sourceTree = "<group>"; };
+		E08B89E24697DCD3E8D6A2F2 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		EF0CBA2CC526A4924455A7AC /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1D2F22B2F73C49F91D40EFAC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				437B1AA4C2AC7861CAA99671 /* LiveKitWebRTC in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCC96B10436C382C4D45B144 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B6ADEE1AD398F56F0E143AB2 /* LiveKitWebRTC in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1A458C97CAB83F2B3C0992FF /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				10F91BF5CE3B715CFD5192E8 /* LoginView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		1FD647286F0EE5E2B0AF4401 /* Channels */ = {
+			isa = PBXGroup;
+			children = (
+				E023405500007217392447DB /* CreateChannelSheet.swift */,
+				DC14762C0DC0B513538E4910 /* NewDmSheet.swift */,
+			);
+			path = Channels;
+			sourceTree = "<group>";
+		};
+		517BBF7FEA12C666E4398FBB /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C5410051910E396776C442F3 /* Call.swift */,
+				3E73036B6E90EEE023E80660 /* Channel.swift */,
+				E08B89E24697DCD3E8D6A2F2 /* Message.swift */,
+				10700DEDD6A7149B2D0D0359 /* User.swift */,
+				C158D23F7DC11389CD04AA58 /* WebSocketMessage.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		686C46E0494A962D58F7F029 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				369B33E12BE676215AD11CEC /* APIClient.swift */,
+				50D86DF36FA3C43361FCDBE4 /* AuthService.swift */,
+				A49A3B7595007447EFADA0B0 /* KeychainHelper.swift */,
+				7E025CA463239EFB3EFBB5FE /* WebSocketService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		6A99BDD7DD74654C47CF3AD4 /* Calls */ = {
+			isa = PBXGroup;
+			children = (
+				ACEB76E08DCDBCBD71907FE4 /* CallView.swift */,
+			);
+			path = Calls;
+			sourceTree = "<group>";
+		};
+		7729CFB28435706BF35D3971 /* WebRTC */ = {
+			isa = PBXGroup;
+			children = (
+				AFAF5067D709A5E7EFC32B91 /* PeerConnectionManager.swift */,
+				3B10AA4A1D4A6F990649A23B /* VideoRendererView.swift */,
+				A8EE01DDFCEC0FBCC0992B6C /* WebRTCClient.swift */,
+				84BCD66C3599C2FEA025038D /* WebRTCCompat.swift */,
+			);
+			path = WebRTC;
+			sourceTree = "<group>";
+		};
+		80DEC764CB5840931F934B1D /* TeamFlow */ = {
+			isa = PBXGroup;
+			children = (
+				97751000384F673E5BA460E0 /* App */,
+				517BBF7FEA12C666E4398FBB /* Models */,
+				686C46E0494A962D58F7F029 /* Services */,
+				F355B53F7E767840E92D252E /* ViewModels */,
+				F52061EC9805624A9380A5B7 /* Views */,
+				7729CFB28435706BF35D3971 /* WebRTC */,
+			);
+			path = TeamFlow;
+			sourceTree = "<group>";
+		};
+		8234D78283F42204EC20FE43 /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				58918ACA67B9D566DFA1E765 /* MainView.swift */,
+				9C3F60FAF1B60D468E083161 /* SidebarView.swift */,
+			);
+			path = Main;
+			sourceTree = "<group>";
+		};
+		90653D5264E943C83B9643AE = {
+			isa = PBXGroup;
+			children = (
+				80DEC764CB5840931F934B1D /* TeamFlow */,
+				E2EE308ACDEB15C63AC06FF1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		97751000384F673E5BA460E0 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2767463B867ABC59EA6D8821 /* TeamFlowApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D9CC426B05929D57E6CA50BE /* Messages */ = {
+			isa = PBXGroup;
+			children = (
+				C7BCB16CDD13B06C57EC3E05 /* MessageRow.swift */,
+			);
+			path = Messages;
+			sourceTree = "<group>";
+		};
+		E2EE308ACDEB15C63AC06FF1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				323B2E748B996D59FADD0FE1 /* TeamFlow-iOS.app */,
+				0DB7120B0F3F18E678F10AEC /* TeamFlow-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F355B53F7E767840E92D252E /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				EF0CBA2CC526A4924455A7AC /* AuthViewModel.swift */,
+				D5FE34EE7F2C20A152DB71F1 /* CallViewModel.swift */,
+				410D5C53ECE00E1FEC562887 /* ChannelListViewModel.swift */,
+				9150E209C7465BC909A400C5 /* MessageListViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		F52061EC9805624A9380A5B7 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1A458C97CAB83F2B3C0992FF /* Auth */,
+				6A99BDD7DD74654C47CF3AD4 /* Calls */,
+				1FD647286F0EE5E2B0AF4401 /* Channels */,
+				8234D78283F42204EC20FE43 /* Main */,
+				D9CC426B05929D57E6CA50BE /* Messages */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2FFFEE883234F9F5078C7183 /* TeamFlow-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E9E1BFF7172A11B9F168BCE2 /* Build configuration list for PBXNativeTarget "TeamFlow-macOS" */;
+			buildPhases = (
+				BD56961270D04C1C7B693D9C /* Sources */,
+				1D2F22B2F73C49F91D40EFAC /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "TeamFlow-macOS";
+			packageProductDependencies = (
+				7BF3D6475F37F96AAACA278E /* LiveKitWebRTC */,
+			);
+			productName = "TeamFlow-macOS";
+			productReference = 0DB7120B0F3F18E678F10AEC /* TeamFlow-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BC118890DFDB471B33E90437 /* TeamFlow-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 742690E2A3E5B9BA886D9044 /* Build configuration list for PBXNativeTarget "TeamFlow-iOS" */;
+			buildPhases = (
+				4990BCD28740FD1F1B164239 /* Sources */,
+				FCC96B10436C382C4D45B144 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "TeamFlow-iOS";
+			packageProductDependencies = (
+				B3A3B4B395D9DB97EB986DAD /* LiveKitWebRTC */,
+			);
+			productName = "TeamFlow-iOS";
+			productReference = 323B2E748B996D59FADD0FE1 /* TeamFlow-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8C1939FCB44BDD2F8C879793 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					2FFFEE883234F9F5078C7183 = {
+						DevelopmentTeam = R4DHNFSJKM;
+						ProvisioningStyle = Manual;
+					};
+					BC118890DFDB471B33E90437 = {
+						DevelopmentTeam = R4DHNFSJKM;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FFE11B7EA217EE65D40E1907 /* Build configuration list for PBXProject "TeamFlow" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 90653D5264E943C83B9643AE;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F58FA29F4102AA694D04250C /* XCRemoteSwiftPackageReference "webrtc-xcframework" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E2EE308ACDEB15C63AC06FF1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BC118890DFDB471B33E90437 /* TeamFlow-iOS */,
+				2FFFEE883234F9F5078C7183 /* TeamFlow-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4990BCD28740FD1F1B164239 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				39B65F58BC91B90A558C25E7 /* APIClient.swift in Sources */,
+				AFEA919AE696012CA40A2BCA /* AuthService.swift in Sources */,
+				5E079A638BA244D96FD43EE5 /* AuthViewModel.swift in Sources */,
+				77BD1E6670311BB24B2A42C9 /* Call.swift in Sources */,
+				BEFCBA127DD49347B767E3BB /* CallView.swift in Sources */,
+				EFA92862D408088341D4FF9F /* CallViewModel.swift in Sources */,
+				232DF5E607628A0DE81C12B8 /* Channel.swift in Sources */,
+				5D17CC28FD4AE6E789FC01E4 /* ChannelListViewModel.swift in Sources */,
+				A8F31B0D45B04F6C4DC8FE83 /* CreateChannelSheet.swift in Sources */,
+				0E9D8F61ED57CB4CBFF827DE /* KeychainHelper.swift in Sources */,
+				304AEAB9576114C90DCD2FC9 /* LoginView.swift in Sources */,
+				0139D2A8F10A84D07335120A /* MainView.swift in Sources */,
+				62A53305F110D89340E1FE65 /* Message.swift in Sources */,
+				C44D7B8CBB874DC0405D4FD1 /* MessageListViewModel.swift in Sources */,
+				EA7D95FB741E8BBB6BC07E12 /* MessageRow.swift in Sources */,
+				5A9F86C9280BF934A37DF10E /* NewDmSheet.swift in Sources */,
+				DA1562753E74CB60D6A0E0E1 /* PeerConnectionManager.swift in Sources */,
+				11AFB4B2E50DF82D2DE8DCDA /* SidebarView.swift in Sources */,
+				7F23A4C2667DEE0991F4EF75 /* TeamFlowApp.swift in Sources */,
+				F92638B2DCCDB7EC73921EB2 /* User.swift in Sources */,
+				0C4EFEF239A94A43F4BC82C7 /* VideoRendererView.swift in Sources */,
+				981FA77F36A0E2ACEB3E5397 /* WebRTCClient.swift in Sources */,
+				8D903771D26D545035431984 /* WebRTCCompat.swift in Sources */,
+				9C26A826A7F9B5B6BDE559F0 /* WebSocketMessage.swift in Sources */,
+				12F751A181628889B258AD99 /* WebSocketService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BD56961270D04C1C7B693D9C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4DEE90B75687DA4E81D6817B /* APIClient.swift in Sources */,
+				20756C9D2FE959D82DF3606D /* AuthService.swift in Sources */,
+				3A425EC31A95BB3C0DC3EB88 /* AuthViewModel.swift in Sources */,
+				E35A8B090643F82C5D90304D /* Call.swift in Sources */,
+				5B3F25E278808300727674FB /* CallView.swift in Sources */,
+				EB2A471A6276EE67D1714C93 /* CallViewModel.swift in Sources */,
+				0FB447ABD975AF9904108D0E /* Channel.swift in Sources */,
+				A363B93F03DB3ECDEA4B57EB /* ChannelListViewModel.swift in Sources */,
+				D6F3E19CD994D25FE41C76E8 /* CreateChannelSheet.swift in Sources */,
+				A8D44FB2200613715152023B /* KeychainHelper.swift in Sources */,
+				27C7139AAFF3D074F52703FE /* LoginView.swift in Sources */,
+				762955F0DECDCB0B41CDC293 /* MainView.swift in Sources */,
+				6F449D57C3A57F2C8E9F8A56 /* Message.swift in Sources */,
+				676F945FC7601AFC36401278 /* MessageListViewModel.swift in Sources */,
+				B91C9478243B976F92141C47 /* MessageRow.swift in Sources */,
+				DD2420CECB1D8E61C5593AA9 /* NewDmSheet.swift in Sources */,
+				0EBD523A932275E1696D767B /* PeerConnectionManager.swift in Sources */,
+				B8605402D7513B54B306B43C /* SidebarView.swift in Sources */,
+				5552F1A68BAC8D3FB1B51B9F /* TeamFlowApp.swift in Sources */,
+				723EF5B6B37ED4F2326E773B /* User.swift in Sources */,
+				4BC315B822171479E460480D /* VideoRendererView.swift in Sources */,
+				88F6ADCD21252144BD617ABB /* WebRTCClient.swift in Sources */,
+				3D29895AEE1247AE8C88EE7D /* WebRTCCompat.swift in Sources */,
+				AE54C992F3F9DA57F8064C48 /* WebSocketMessage.swift in Sources */,
+				ACA511776E9FD805F824E351 /* WebSocketService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		065DADB442AAE405669FFAB7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.2.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		6968B43BAF38097B17E31987 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = R4DHNFSJKM;
+				INFOPLIST_FILE = TeamFlowIOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teamflow.ios;
+				PRODUCT_NAME = TeamFlow;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		70B94DCE61EC8253748C4975 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TeamFlowMac/TeamFlow.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application: John Anthony Pecson (R4DHNFSJKM)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = R4DHNFSJKM;
+				INFOPLIST_FILE = TeamFlowMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teamflow.macos;
+				PRODUCT_NAME = TeamFlow;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		8E3188DEE0BFB07CEFC4D1EF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.2.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		93EB610D963A7AAADA7B6801 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TeamFlowMac/TeamFlow.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application: John Anthony Pecson (R4DHNFSJKM)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = R4DHNFSJKM;
+				INFOPLIST_FILE = TeamFlowMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teamflow.macos;
+				PRODUCT_NAME = TeamFlow;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		9A497589AAC3B6EEF4C01C95 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = R4DHNFSJKM;
+				INFOPLIST_FILE = TeamFlowIOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teamflow.ios;
+				PRODUCT_NAME = TeamFlow;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		742690E2A3E5B9BA886D9044 /* Build configuration list for PBXNativeTarget "TeamFlow-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9A497589AAC3B6EEF4C01C95 /* Debug */,
+				6968B43BAF38097B17E31987 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E9E1BFF7172A11B9F168BCE2 /* Build configuration list for PBXNativeTarget "TeamFlow-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				93EB610D963A7AAADA7B6801 /* Debug */,
+				70B94DCE61EC8253748C4975 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FFE11B7EA217EE65D40E1907 /* Build configuration list for PBXProject "TeamFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E3188DEE0BFB07CEFC4D1EF /* Debug */,
+				065DADB442AAE405669FFAB7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F58FA29F4102AA694D04250C /* XCRemoteSwiftPackageReference "webrtc-xcframework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/webrtc-xcframework";
+			requirement = {
+				kind = exactVersion;
+				version = 144.7559.04;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7BF3D6475F37F96AAACA278E /* LiveKitWebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F58FA29F4102AA694D04250C /* XCRemoteSwiftPackageReference "webrtc-xcframework" */;
+			productName = LiveKitWebRTC;
+		};
+		B3A3B4B395D9DB97EB986DAD /* LiveKitWebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F58FA29F4102AA694D04250C /* XCRemoteSwiftPackageReference "webrtc-xcframework" */;
+			productName = LiveKitWebRTC;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8C1939FCB44BDD2F8C879793 /* Project object */;
+}

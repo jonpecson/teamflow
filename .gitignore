@@ -5,8 +5,21 @@ src-tauri/target/
 # Node
 node_modules/
 
-# Environment
+# Secrets & credentials (HIPAA: never commit)
 .env
+.env.*
+!.env.example
+*.p8
+*.pem
+*.key
+*.cert
+*.pfx
+
+# Xcode
+apple/build/
+apple/.build/
+*.xcuserdata
+*.xcworkspace
 
 # Editor
 *.swp
@@ -21,3 +34,6 @@ landing/*.dmg
 
 # Static build output (regenerated)
 static/assets/
+
+# Logs
+*.log

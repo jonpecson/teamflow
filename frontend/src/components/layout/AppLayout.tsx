@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import ChatHeader from './ChatHeader';
 import MessageList from '../messages/MessageList';
 import MessageInput from '../messages/MessageInput';
+import { requestNotificationPermission } from '../../utils/notifications';
 import HuddleRoom from '../huddle/HuddleRoom';
 import HuddleMiniWindow from '../huddle/HuddleMiniWindow';
 import ChannelDetailPanel from '../channels/ChannelDetailPanel';
@@ -26,11 +27,13 @@ export default function AppLayout() {
   const [showInvite, setShowInvite] = useState(false);
   const [showInviteCode, setShowInviteCode] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadChannels();
     loadUsers();
     loadActiveCalls();
+    requestNotificationPermission();
     const pollInterval = setInterval(loadActiveCalls, 10000);
     return () => clearInterval(pollInterval);
   }, [loadChannels, loadUsers, loadActiveCalls]);
@@ -69,13 +72,15 @@ export default function AppLayout() {
 
   return (
     <div className={`app ${isInCallOnCurrentChannel ? 'in-call' : ''}`}>
-      {!isInCallOnCurrentChannel && (
-        <Sidebar
-          onShowCreateChannel={() => setShowCreateChannel(true)}
-          onShowInviteCode={() => setShowInviteCode(true)}
-        />
-      )}
-      <main className="main">
+      {/* Sidebar: always available on mobile (collapsible), hidden on desktop during calls */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onShowCreateChannel={() => setShowCreateChannel(true)}
+        onShowInviteCode={() => setShowInviteCode(true)}
+        onChannelSelect={() => setSidebarOpen(false)}
+      />
+      <main className="main" onClick={() => sidebarOpen && setSidebarOpen(false)}>
         {!isInCallOnCurrentChannel && (
           <ChatHeader
             onShowInvite={() => setShowInvite(true)}

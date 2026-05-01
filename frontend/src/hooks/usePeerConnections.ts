@@ -4,6 +4,17 @@ const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    // Free TURN server for NAT traversal
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
 };
 
@@ -11,6 +22,7 @@ interface PeerEntry {
   pc: RTCPeerConnection;
   stream: MediaStream;
   makingOffer: boolean;
+  polite: boolean;
 }
 
 export function usePeerConnections(
@@ -22,8 +34,10 @@ export function usePeerConnections(
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
   const meetingIdRef = useRef(meetingId);
   const sendRef = useRef(send);
+  const localStreamRef = useRef(localStream);
   meetingIdRef.current = meetingId;
   sendRef.current = send;
+  localStreamRef.current = localStream;
 
   const updateStreams = useCallback(() => {
     const map = new Map<string, MediaStream>();
@@ -35,6 +49,7 @@ export function usePeerConnections(
 
   const sendSignal = useCallback((targetUser: string, signalType: string, data: unknown) => {
     if (!meetingIdRef.current) return;
+    console.log(`[WebRTC] Sending ${signalType} to ${targetUser}`);
     sendRef.current({
       type: 'rtc_signal',
       meeting_id: meetingIdRef.current,
@@ -47,14 +62,25 @@ export function usePeerConnections(
   const createPeer = useCallback((remoteUser: string, polite: boolean) => {
     if (peersRef.current.has(remoteUser)) return;
 
+    console.log(`[WebRTC] Creating peer for ${remoteUser}, polite=${polite}`);
     const pc = new RTCPeerConnection(ICE_SERVERS);
     const remoteStream = new MediaStream();
-    const entry: PeerEntry = { pc, stream: remoteStream, makingOffer: false };
+    const entry: PeerEntry = { pc, stream: remoteStream, makingOffer: false, polite };
     peersRef.current.set(remoteUser, entry);
+
+    // Add current local tracks immediately
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        console.log(`[WebRTC] Adding local ${track.kind} track to peer ${remoteUser}`);
+        pc.addTrack(track, localStreamRef.current!);
+      });
+    }
 
     // Receive remote tracks
     pc.ontrack = (e) => {
+      console.log(`[WebRTC] Got remote ${e.track.kind} track from ${remoteUser}`);
       remoteStream.addTrack(e.track);
+      // Force re-render by creating new map
       updateStreams();
     };
 
@@ -65,42 +91,47 @@ export function usePeerConnections(
       }
     };
 
-    // "Perfect negotiation" pattern: handle negotiationneeded
+    // Handle negotiation needed (fires when tracks are added)
     pc.onnegotiationneeded = async () => {
+      console.log(`[WebRTC] Negotiation needed for ${remoteUser}`);
       try {
         entry.makingOffer = true;
         await pc.setLocalDescription();
         sendSignal(remoteUser, 'offer', pc.localDescription!.toJSON());
       } catch (err) {
-        console.error('Negotiation failed:', err);
+        console.error('[WebRTC] Negotiation failed:', err);
       } finally {
         entry.makingOffer = false;
       }
     };
 
+    pc.oniceconnectionstatechange = () => {
+      console.log(`[WebRTC] ICE state for ${remoteUser}: ${pc.iceConnectionState}`);
+    };
+
     pc.onconnectionstatechange = () => {
+      console.log(`[WebRTC] Connection state for ${remoteUser}: ${pc.connectionState}`);
       if (pc.connectionState === 'failed') {
+        console.log(`[WebRTC] Connection failed for ${remoteUser}, closing`);
         pc.close();
         peersRef.current.delete(remoteUser);
         updateStreams();
       }
     };
 
-    // Store polite flag for signal handling
-    (pc as unknown as Record<string, boolean>)._polite = polite;
-
     return pc;
   }, [sendSignal, updateStreams]);
 
-  // Sync local tracks to all peer connections
+  // When localStream changes (camera on/off), update tracks on all peers
   useEffect(() => {
-    peersRef.current.forEach((entry) => {
+    peersRef.current.forEach(async (entry, remoteUser) => {
       const pc = entry.pc;
       if (pc.connectionState === 'closed') return;
 
       const senders = pc.getSenders();
+      const stream = localStreamRef.current;
 
-      if (!localStream) {
+      if (!stream) {
         // Remove all tracks
         senders.forEach((s) => {
           if (s.track) pc.removeTrack(s);
@@ -108,19 +139,22 @@ export function usePeerConnections(
         return;
       }
 
-      const localTracks = localStream.getTracks();
+      const localTracks = stream.getTracks();
 
-      // Replace or add each local track
+      // Add or replace tracks
       for (const track of localTracks) {
         const sender = senders.find((s) => s.track?.kind === track.kind);
         if (sender) {
-          sender.replaceTrack(track);
+          console.log(`[WebRTC] Replacing ${track.kind} track for ${remoteUser}`);
+          await sender.replaceTrack(track);
         } else {
-          pc.addTrack(track, localStream);
+          console.log(`[WebRTC] Adding new ${track.kind} track for ${remoteUser}`);
+          pc.addTrack(track, stream);
+          // onnegotiationneeded will fire and send a new offer
         }
       }
 
-      // Remove senders for kinds no longer in local stream
+      // Remove tracks no longer in local stream
       for (const sender of senders) {
         if (sender.track && !localTracks.some((t) => t.kind === sender.track!.kind)) {
           pc.removeTrack(sender);
@@ -131,53 +165,55 @@ export function usePeerConnections(
 
   const handleSignal = useCallback(async (fromUser: string, signalType: string, data: unknown) => {
     let entry = peersRef.current.get(fromUser);
+    console.log(`[WebRTC] Received ${signalType} from ${fromUser}`);
 
     if (signalType === 'offer') {
       if (!entry) {
-        // We're the polite peer (receiving an unsolicited offer)
+        // Receiving unsolicited offer — we're the polite peer
         createPeer(fromUser, true);
         entry = peersRef.current.get(fromUser);
         if (!entry) return;
-
-        // Add current local tracks
-        if (localStream) {
-          localStream.getTracks().forEach((track) => {
-            entry!.pc.addTrack(track, localStream);
-          });
-        }
       }
 
       const pc = entry.pc;
-      const polite = (pc as unknown as Record<string, boolean>)._polite ?? true;
       const offerCollision = entry.makingOffer || pc.signalingState !== 'stable';
 
-      if (!polite && offerCollision) {
-        return; // Impolite peer ignores colliding offers
+      if (!entry.polite && offerCollision) {
+        console.log(`[WebRTC] Ignoring colliding offer from ${fromUser} (we're impolite)`);
+        return;
+      }
+
+      if (offerCollision) {
+        // Polite peer rolls back
+        console.log(`[WebRTC] Rolling back for offer from ${fromUser} (we're polite)`);
+        await pc.setLocalDescription({ type: 'rollback' });
       }
 
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(data as RTCSessionDescriptionInit));
         await pc.setLocalDescription();
+        console.log(`[WebRTC] Sending answer to ${fromUser}`);
         sendSignal(fromUser, 'answer', pc.localDescription!.toJSON());
       } catch (err) {
-        console.error('Failed to handle offer from', fromUser, err);
+        console.error(`[WebRTC] Failed to handle offer from ${fromUser}:`, err);
       }
     } else if (signalType === 'answer') {
       if (!entry) return;
       try {
         await entry.pc.setRemoteDescription(new RTCSessionDescription(data as RTCSessionDescriptionInit));
+        console.log(`[WebRTC] Answer set from ${fromUser}`);
       } catch (err) {
-        console.error('Failed to set answer from', fromUser, err);
+        console.error(`[WebRTC] Failed to set answer from ${fromUser}:`, err);
       }
     } else if (signalType === 'ice_candidate') {
       if (!entry) return;
       try {
         await entry.pc.addIceCandidate(new RTCIceCandidate(data as RTCIceCandidateInit));
-      } catch (err) {
-        // Ignore ICE candidate errors during early setup
+      } catch {
+        // Ignore early ICE candidates
       }
     }
-  }, [createPeer, sendSignal, localStream]);
+  }, [createPeer, sendSignal]);
 
   const removePeer = useCallback((username: string) => {
     const entry = peersRef.current.get(username);
@@ -188,7 +224,7 @@ export function usePeerConnections(
     }
   }, [updateStreams]);
 
-  // Cleanup all peers on unmount or meeting change
+  // Cleanup on unmount or meeting change
   useEffect(() => {
     return () => {
       peersRef.current.forEach((entry) => entry.pc.close());

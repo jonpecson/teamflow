@@ -1,0 +1,52 @@
+name: TeamFlow
+options:
+  bundleIdPrefix: com.teamflow
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "0.2.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  LiveKitWebRTC:
+    url: https://github.com/livekit/webrtc-xcframework
+    exactVersion: "144.7559.04"
+
+targets:
+  TeamFlow-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - TeamFlow
+    dependencies:
+      - package: LiveKitWebRTC
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.teamflow.macos
+        PRODUCT_NAME: TeamFlow
+        CODE_SIGN_IDENTITY: "Developer ID Application: John Anthony Pecson (R4DHNFSJKM)"
+        DEVELOPMENT_TEAM: R4DHNFSJKM
+        CODE_SIGN_STYLE: Manual
+        INFOPLIST_FILE: TeamFlowMac/Info.plist
+        CODE_SIGN_ENTITLEMENTS: TeamFlowMac/TeamFlow.entitlements
+
+  TeamFlow-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - TeamFlow
+    dependencies:
+      - package: LiveKitWebRTC
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.teamflow.ios
+        PRODUCT_NAME: TeamFlow
+        DEVELOPMENT_TEAM: R4DHNFSJKM
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_FILE: TeamFlowIOS/Info.plist

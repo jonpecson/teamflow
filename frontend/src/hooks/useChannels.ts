@@ -19,10 +19,20 @@ export function useChannels() {
     dispatch({ type: 'SET_CHANNELS', channels, dmChannels });
     dispatch({ type: 'SET_MY_CHANNEL_IDS', ids: (myChannels as Channel[]).map((c) => c.id) });
 
-    // Auto-select first channel if none selected
+    // Auto-select first channel if none selected, and load its history
     if (!state.currentChannelId && channels.length > 0) {
       const general = channels.find((c) => c.name === 'general');
-      dispatch({ type: 'SELECT_CHANNEL', channelId: general?.id || channels[0].id });
+      const channelId = general?.id || channels[0].id;
+      dispatch({ type: 'SELECT_CHANNEL', channelId });
+      const history = await api.channelHistory(channelId, 100) as MessageData[];
+      dispatch({
+        type: 'SET_MESSAGES',
+        channelId,
+        messages: history.map((m) => ({
+          ...m,
+          timestamp: m.timestamp || m.created_at || '',
+        })),
+      });
     }
   }, [dispatch, state.currentChannelId]);
 

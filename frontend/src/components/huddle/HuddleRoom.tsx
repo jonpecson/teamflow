@@ -35,13 +35,16 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Initiate peer connections to other participants.
-  // We are the "impolite" peer (initiator) — they will be "polite" (responder).
+  // When participants change, create peer connections.
+  // Use alphabetical order to determine roles: lower name = polite, higher = impolite (initiator).
+  // This ensures exactly one side initiates, avoiding offer collisions.
   useEffect(() => {
     if (!currentCall || !state.username) return;
     currentCall.participants.forEach((p) => {
       if (p !== state.username) {
-        createPeer(p, false); // We initiate, so we're impolite
+        // The user with the alphabetically "higher" name initiates
+        const weInitiate = state.username! > p;
+        createPeer(p, !weInitiate); // polite = we don't initiate
       }
     });
   }, [currentCall?.participants.join(','), state.username, createPeer]);

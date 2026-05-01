@@ -2,8 +2,10 @@ pub mod auth;
 pub mod calls;
 pub mod channels;
 pub mod config;
+pub mod crypto;
 pub mod error;
 pub mod invites;
+pub mod push;
 pub mod state;
 pub mod ws;
 
@@ -96,7 +98,7 @@ async fn health() -> StatusCode {
     StatusCode::OK
 }
 
-fn build_router(state: AppState) -> Router {
+fn build_router(state: AppState, static_path: &str) -> Router {
     let api = Router::new()
         .route("/auth/register", post(auth::handlers::register))
         .route("/auth/login", post(auth::handlers::login))
@@ -119,14 +121,35 @@ fn build_router(state: AppState) -> Router {
         .route("/calls/{meeting_id}/leave", post(calls::handlers::leave_call))
         .route("/calls/{meeting_id}", axum::routing::delete(calls::handlers::end_call))
         .route("/calls/force-end-all", post(calls::handlers::force_end_all_calls))
+        .route("/devices", post(push::handlers::register_device))
+        .route("/devices", axum::routing::delete(push::handlers::unregister_device))
         .route("/online", get(online_users))
         .route("/health", get(health));
+
+    // HIPAA: Restrict CORS to production origin only
+    let cors = CorsLayer::new()
+        .allow_origin([
+            "https://teamflow.statlingo.ai".parse::<axum::http::HeaderValue>().unwrap(),
+            "http://localhost:8080".parse::<axum::http::HeaderValue>().unwrap(), // dev only
+        ])
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+        ])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::AUTHORIZATION,
+            axum::http::HeaderName::from_static("x-csrf-token"),
+        ])
+        .allow_credentials(true);
 
     Router::new()
         .nest("/api", api)
         .route("/ws", get(ws::handler::ws_upgrade))
-        .fallback_service(ServeDir::new("static"))
-        .layer(CorsLayer::permissive())
+        .fallback_service(ServeDir::new(static_path))
+        .layer(cors)
         .with_state(state)
 }
 
@@ -200,6 +223,34 @@ pub async fn start_server(static_dir: Option<&str>) -> Result<(), Box<dyn std::e
         tracing::info!("Rehydrated {} active call sessions from DB", call_state.meetings.len());
     }
 
+    // Initialize push notifications (optional — works without APNs config)
+    let push_service = match (
+        std::env::var("APNS_KEY_PATH"),
+        std::env::var("APNS_KEY_ID"),
+        std::env::var("APNS_TOPIC"),
+    ) {
+        (Ok(key_path), Ok(key_id), Ok(topic)) => {
+            match std::fs::read(&key_path) {
+                Ok(key_data) => {
+                    let team_id = std::env::var("APNS_TEAM_ID").unwrap_or_else(|_| "R4DHNFSJKM".into());
+                    let sandbox = std::env::var("APNS_SANDBOX").unwrap_or_else(|_| "true".into()) == "true";
+                    match push::apns::ApnsClient::new(&key_data, key_id, team_id, topic, sandbox) {
+                        Ok(apns) => {
+                            tracing::info!("APNs push notifications enabled");
+                            Some(Arc::new(push::PushService::new(apns, pool.clone())))
+                        }
+                        Err(e) => { tracing::warn!("APNs init failed: {e}"); None }
+                    }
+                }
+                Err(e) => { tracing::warn!("APNs key file not found at {key_path}: {e}"); None }
+            }
+        }
+        _ => {
+            tracing::info!("APNs not configured — push notifications disabled");
+            None
+        }
+    };
+
     let state = AppState {
         db: pool.clone(),
         config: config.clone(),
@@ -207,6 +258,7 @@ pub async fn start_server(static_dir: Option<&str>) -> Result<(), Box<dyn std::e
         calls: call_state.clone(),
         call_provider: call_provider.clone(),
         rate_limiter,
+        push: push_service,
     };
 
     tokio::spawn(calls::cleanup::run_cleanup(
@@ -220,43 +272,8 @@ pub async fn start_server(static_dir: Option<&str>) -> Result<(), Box<dyn std::e
         config.call_cleanup_interval_secs,
     ));
 
-    let app = if let Some(dir) = static_dir {
-        // Use custom static dir (e.g., from Tauri resource path)
-        let api = build_router(state.clone());
-        // Replace the fallback service with the custom dir
-        let api_routes = Router::new()
-            .nest("/api", Router::new()
-                .route("/auth/register", post(auth::handlers::register))
-                .route("/auth/login", post(auth::handlers::login))
-                .route("/channels", get(channels::handlers::list_channels))
-                .route("/channels", post(channels::handlers::create_channel))
-                .route("/channels/mine", get(channels::handlers::my_channels))
-                .route("/channels/{id}/join", post(channels::handlers::join_channel))
-                .route("/channels/{id}/leave", post(channels::handlers::leave_channel))
-                .route("/channels/{id}/members", get(channels::handlers::channel_members))
-                .route("/channels/{id}/messages", get(channels::handlers::channel_history))
-                .route("/invites", post(invites::handlers::create_invite))
-                .route("/invites", get(invites::handlers::list_invites))
-                .route("/invites/{id}", axum::routing::delete(invites::handlers::revoke_invite))
-                .route("/users", get(channels::handlers::list_users))
-                .route("/channels/{id}/invite", post(channels::handlers::invite_to_channel))
-                .route("/dm/{user_id}", post(channels::handlers::get_or_create_dm))
-                .route("/calls", post(calls::handlers::start_call))
-                .route("/calls/active", get(calls::handlers::active_calls))
-                .route("/calls/{meeting_id}/join", post(calls::handlers::join_call))
-                .route("/calls/{meeting_id}/leave", post(calls::handlers::leave_call))
-                .route("/calls/{meeting_id}", axum::routing::delete(calls::handlers::end_call))
-                .route("/calls/force-end-all", post(calls::handlers::force_end_all_calls))
-                .route("/online", get(online_users))
-                .route("/health", get(health)))
-            .route("/ws", get(ws::handler::ws_upgrade))
-            .fallback_service(ServeDir::new(dir))
-            .layer(CorsLayer::permissive())
-            .with_state(state);
-        api_routes
-    } else {
-        build_router(state)
-    };
+    let static_path = static_dir.unwrap_or("static");
+    let app = build_router(state, static_path);
 
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server listening on {bind_addr}");
