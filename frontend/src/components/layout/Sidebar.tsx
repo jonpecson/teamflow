@@ -7,6 +7,7 @@ import { avatarColor, avatarInitial } from '../../utils/colors';
 import ChannelList from '../channels/ChannelList';
 import DmList from '../channels/DmList';
 import OnlineList from '../users/OnlineList';
+import MfaSetup from '../settings/MfaSetup';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
   const state = useAppState();
   const [search, setSearch] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMfa, setShowMfa] = useState(false);
 
   const filteredChannels = search
     ? channels.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
@@ -117,6 +119,9 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
             <span className="sidebar-user-label">Online</span>
           </div>
           <div className="sidebar-user-actions">
+            <button className="sidebar-action-btn" title="Enable 2FA" onClick={(e) => { e.stopPropagation(); setShowMfa(true); }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </button>
             <button className="sidebar-action-btn" title="Invite team members" onClick={(e) => { e.stopPropagation(); onShowInviteCode(); }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
             </button>
@@ -126,6 +131,8 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
           </div>
         </div>
       </div>
+
+      {showMfa && <MfaSetup onClose={() => setShowMfa(false)} />}
     </aside>
   );
 }

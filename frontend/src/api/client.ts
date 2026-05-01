@@ -110,4 +110,14 @@ export const api = {
 
   // TURN credentials (HIPAA H5)
   turnCredentials: () => request('/turn-credentials'),
+
+  // MFA (HIPAA H2)
+  setupMfa: () => request('/mfa/setup', { method: 'POST' }),
+  verifyMfa: (code: string) =>
+    request('/mfa/verify', { method: 'POST', body: JSON.stringify({ code }) }),
+  validateMfa: (userId: string, code: string) =>
+    request('/mfa/validate', { method: 'POST', body: JSON.stringify({ user_id: userId, code }) }),
+
+  // Logout (HIPAA C3)
+  logout: () => request('/auth/logout', { method: 'POST' }).catch(() => {}),
 };
