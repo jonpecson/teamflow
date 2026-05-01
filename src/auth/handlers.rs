@@ -66,9 +66,19 @@ pub async fn register(
             "Username must be alphanumeric or underscore".into(),
         ));
     }
-    if body.password.len() < 6 {
+    // HIPAA: Password policy — minimum 8 chars with complexity [4.1]
+    if body.password.len() < 8 {
         return Err(AppError::BadRequest(
-            "Password must be at least 6 characters".into(),
+            "Password must be at least 8 characters".into(),
+        ));
+    }
+    let has_upper = body.password.chars().any(|c| c.is_uppercase());
+    let has_lower = body.password.chars().any(|c| c.is_lowercase());
+    let has_digit = body.password.chars().any(|c| c.is_ascii_digit());
+    let has_special = body.password.chars().any(|c| !c.is_alphanumeric());
+    if !has_upper || !has_lower || !has_digit || !has_special {
+        return Err(AppError::BadRequest(
+            "Password must contain uppercase, lowercase, digit, and special character".into(),
         ));
     }
 

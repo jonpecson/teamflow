@@ -1,22 +1,24 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
+import { api } from '../api/client';
 
-const ICE_SERVERS: RTCConfiguration = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    // Free TURN server for NAT traversal
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-  ],
-};
+// HIPAA [H5]: Fetch TURN credentials from server instead of hardcoding
+let cachedIceServers: RTCIceServer[] | null = null;
+let cacheExpiry = 0;
+
+async function getIceServers(): Promise<RTCConfiguration> {
+  if (cachedIceServers && Date.now() < cacheExpiry) {
+    return { iceServers: cachedIceServers };
+  }
+  try {
+    const data = await api.turnCredentials() as { iceServers: RTCIceServer[]; ttl: number };
+    cachedIceServers = data.iceServers;
+    cacheExpiry = Date.now() + (data.ttl * 1000) - 60000; // refresh 1 min early
+    return { iceServers: data.iceServers };
+  } catch {
+    // Fallback to STUN only
+    return { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+  }
+}
 
 interface PeerEntry {
   pc: RTCPeerConnection;
@@ -59,11 +61,12 @@ export function usePeerConnections(
     });
   }, []);
 
-  const createPeer = useCallback((remoteUser: string, polite: boolean) => {
+  const createPeer = useCallback(async (remoteUser: string, polite: boolean) => {
     if (peersRef.current.has(remoteUser)) return;
 
     console.log(`[WebRTC] Creating peer for ${remoteUser}, polite=${polite}`);
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const iceConfig = await getIceServers();
+    const pc = new RTCPeerConnection(iceConfig);
     const remoteStream = new MediaStream();
     const entry: PeerEntry = { pc, stream: remoteStream, makingOffer: false, polite };
     peersRef.current.set(remoteUser, entry);

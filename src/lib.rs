@@ -8,6 +8,7 @@ pub mod error;
 pub mod invites;
 pub mod mfa;
 pub mod push;
+pub mod retention;
 pub mod state;
 pub mod ws;
 
@@ -100,6 +101,33 @@ async fn health() -> StatusCode {
     StatusCode::OK
 }
 
+/// HIPAA [H5]: Return TURN server credentials.
+/// In production, this should generate ephemeral credentials from a self-hosted Coturn.
+/// For now, returns the configured TURN server or a placeholder.
+async fn turn_credentials(
+    State(state): State<AppState>,
+    _claims: Claims,
+) -> Json<serde_json::Value> {
+    // TODO: Replace with self-hosted Coturn ephemeral credentials
+    // Generate time-limited username/credential using TURN REST API
+    let ttl = 86400u64; // 24 hours
+    let timestamp = chrono::Utc::now().timestamp() as u64 + ttl;
+    let username = format!("{}:teamflow", timestamp);
+
+    Json(serde_json::json!({
+        "iceServers": [
+            { "urls": "stun:stun.l.google.com:19302" },
+            { "urls": "stun:stun1.l.google.com:19302" },
+            {
+                "urls": ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443"],
+                "username": "openrelayproject",
+                "credential": "openrelayproject"
+            }
+        ],
+        "ttl": ttl
+    }))
+}
+
 fn build_router(state: AppState, static_path: &str) -> Router {
     let api = Router::new()
         .route("/auth/register", post(auth::handlers::register))
@@ -130,6 +158,7 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         .route("/devices", post(push::handlers::register_device))
         .route("/devices", axum::routing::delete(push::handlers::unregister_device))
         .route("/online", get(online_users))
+        .route("/turn-credentials", get(turn_credentials))
         .route("/health", get(health));
 
     // HIPAA: Restrict CORS to production origin only
@@ -151,11 +180,45 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         ])
         .allow_credentials(true);
 
+    // HIPAA: Security headers middleware [M1]
+    let security_headers = tower_http::set_header::SetResponseHeaderLayer::overriding(
+        axum::http::header::HeaderName::from_static("x-content-type-options"),
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
+    let frame_options = tower_http::set_header::SetResponseHeaderLayer::overriding(
+        axum::http::header::HeaderName::from_static("x-frame-options"),
+        axum::http::HeaderValue::from_static("DENY"),
+    );
+    let referrer = tower_http::set_header::SetResponseHeaderLayer::overriding(
+        axum::http::header::HeaderName::from_static("referrer-policy"),
+        axum::http::HeaderValue::from_static("no-referrer"),
+    );
+    let hsts = tower_http::set_header::SetResponseHeaderLayer::overriding(
+        axum::http::header::HeaderName::from_static("strict-transport-security"),
+        axum::http::HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+    );
+    let csp = tower_http::set_header::SetResponseHeaderLayer::overriding(
+        axum::http::header::HeaderName::from_static("content-security-policy"),
+        axum::http::HeaderValue::from_static(
+            "default-src 'self'; connect-src 'self' wss://teamflow.statlingo.ai ws://localhost:8080; \
+             script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; \
+             style-src 'self' 'unsafe-inline'; \
+             img-src 'self' data: blob:; \
+             media-src 'self' blob: mediastream:; \
+             frame-ancestors 'none'"
+        ),
+    );
+
     Router::new()
         .nest("/api", api)
         .route("/ws", get(ws::handler::ws_upgrade))
         .fallback_service(ServeDir::new(static_path))
         .layer(cors)
+        .layer(security_headers)
+        .layer(frame_options)
+        .layer(referrer)
+        .layer(hsts)
+        .layer(csp)
         .with_state(state)
 }
 
@@ -277,6 +340,9 @@ pub async fn start_server(static_dir: Option<&str>) -> Result<(), Box<dyn std::e
         config.call_max_duration_secs,
         config.call_cleanup_interval_secs,
     ));
+
+    // HIPAA: Message retention worker (daily cleanup of expired messages)
+    tokio::spawn(retention::run_retention_worker(state.db.clone()));
 
     let static_path = static_dir.unwrap_or("static");
     let app = build_router(state, static_path);

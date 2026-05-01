@@ -106,4 +106,7 @@ export const api = {
     request(`/calls/${meetingId}/leave`, { method: 'POST' }),
   endCall: (meetingId: string) =>
     request(`/calls/${meetingId}`, { method: 'DELETE' }),
+
+  // TURN credentials (HIPAA H5)
+  turnCredentials: () => request('/turn-credentials'),
 };
