@@ -43,17 +43,13 @@ where
         state: &S,
     ) -> Result<Self, Self::Rejection> {
         let app_state = <AppState as axum::extract::FromRef<S>>::from_ref(state);
-        let auth_header = parts
-            .headers
-            .get("authorization")
-            .and_then(|v| v.to_str().ok())
-            .ok_or_else(|| error::AppError::Auth("Missing authorization header".into()))?;
 
-        let token = auth_header
-            .strip_prefix("Bearer ")
-            .ok_or_else(|| error::AppError::Auth("Invalid authorization format".into()))?;
+        // HIPAA [C3]: Check HttpOnly cookie first, then Authorization header
+        let token = extract_token_from_cookie(&parts.headers)
+            .or_else(|| extract_token_from_header(&parts.headers))
+            .ok_or_else(|| error::AppError::Auth("Missing authentication".into()))?;
 
-        validate_token(token, &app_state.config.jwt_secret)
+        validate_token(&token, &app_state.config.jwt_secret)
             .map_err(error::AppError::Auth)
     }
 }
@@ -64,18 +60,39 @@ struct OnlineUser {
     username: String,
 }
 
+/// HIPAA [C3]: Extract JWT from tf_token HttpOnly cookie
+fn extract_token_from_cookie(headers: &axum::http::HeaderMap) -> Option<String> {
+    headers
+        .get(axum::http::header::COOKIE)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|cookies| {
+            cookies.split(';').find_map(|c| {
+                let c = c.trim();
+                c.strip_prefix("tf_token=").map(|t| t.to_string())
+            })
+        })
+}
+
+/// Extract JWT from Authorization: Bearer header
+fn extract_token_from_header(headers: &axum::http::HeaderMap) -> Option<String> {
+    headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(|t| t.to_string())
+}
+
 async fn online_users(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<Vec<OnlineUser>>, error::AppError> {
-    let auth = headers
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-        .ok_or_else(|| error::AppError::Auth("Missing token".into()))?;
+    // HIPAA [C3]: Accept token from cookie or header
+    let token = extract_token_from_cookie(&headers)
+        .or_else(|| extract_token_from_header(&headers))
+        .ok_or_else(|| error::AppError::Auth("Missing authentication".into()))?;
 
-    validate_token(auth, &state.config.jwt_secret)
-        .map_err(|e| error::AppError::Auth(e))?;
+    validate_token(&token, &state.config.jwt_secret)
+        .map_err(error::AppError::Auth)?;
 
     let user_ids = get_online_users(&state);
     let mut users = Vec::new();
@@ -99,6 +116,20 @@ async fn online_users(
 
 async fn health() -> StatusCode {
     StatusCode::OK
+}
+
+/// HIPAA [C3]: Logout clears the HttpOnly cookie
+async fn auth_logout(
+    State(state): State<AppState>,
+    claims: Claims,
+) -> impl axum::response::IntoResponse {
+    audit::log_logout(&state.db, claims.sub).await;
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        axum::http::header::SET_COOKIE,
+        "tf_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0".parse().unwrap(),
+    );
+    (headers, StatusCode::OK)
 }
 
 /// HIPAA [H5]: Return TURN server credentials.
@@ -132,6 +163,7 @@ fn build_router(state: AppState, static_path: &str) -> Router {
     let api = Router::new()
         .route("/auth/register", post(auth::handlers::register))
         .route("/auth/login", post(auth::handlers::login))
+        .route("/auth/logout", post(auth_logout))
         // HIPAA: MFA endpoints
         .route("/mfa/setup", post(mfa::handlers::setup_mfa))
         .route("/mfa/verify", post(mfa::handlers::verify_mfa))

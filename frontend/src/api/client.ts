@@ -18,6 +18,7 @@ async function request<T>(
 ): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...options,
+    credentials: 'include', // HIPAA [C3]: Send HttpOnly cookies
     headers: {
       'Content-Type': 'application/json',
       ...authHeaders(),

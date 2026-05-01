@@ -1,6 +1,7 @@
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::Json;
+use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::auth::jwt::sign_token;
@@ -10,6 +11,20 @@ use crate::state::AppState;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+
+/// HIPAA [C3]: Set HttpOnly Secure cookie with JWT token
+fn make_auth_cookie(token: &str) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    let cookie = format!(
+        "tf_token={}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400",
+        token
+    );
+    headers.insert(
+        axum::http::header::SET_COOKIE,
+        cookie.parse().unwrap(),
+    );
+    headers
+}
 
 #[derive(Deserialize)]
 pub struct RegisterReq {
@@ -34,7 +49,7 @@ pub struct AuthResp {
 pub async fn register(
     State(state): State<AppState>,
     Json(body): Json<RegisterReq>,
-) -> Result<(StatusCode, Json<AuthResp>), AppError> {
+) -> Result<(StatusCode, HeaderMap, Json<AuthResp>), AppError> {
     // Check if any users exist — first user doesn't need invite code
     let user_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM users")
         .fetch_one(&state.db)
@@ -119,8 +134,12 @@ pub async fn register(
         state.config.jwt_expiry_secs,
     );
 
+    // HIPAA [C3]: Set HttpOnly cookie
+    let cookie_headers = make_auth_cookie(&token);
+
     Ok((
         StatusCode::CREATED,
+        cookie_headers,
         Json(AuthResp {
             token,
             user_id: row.0,
@@ -132,7 +151,7 @@ pub async fn register(
 pub async fn login(
     State(state): State<AppState>,
     Json(body): Json<LoginReq>,
-) -> Result<Json<serde_json::Value>, AppError> {
+) -> Result<axum::response::Response, AppError> {
     // HIPAA: Generic error message prevents username enumeration [M3]
     let auth_error = || AppError::Auth("Authentication failed".into());
 
@@ -197,16 +216,21 @@ pub async fn login(
         return Ok(Json(serde_json::json!({
             "mfa_required": true,
             "user_id": user_id,
-        })));
+        })).into_response());
     }
 
     // No MFA — issue token directly
     let token = sign_token(user_id, &username, &state.config.jwt_secret, state.config.jwt_expiry_secs);
     crate::audit::log_login(&state.db, user_id, &username, true, None).await;
 
-    Ok(Json(serde_json::json!({
-        "token": token,
-        "user_id": user_id,
-        "username": username,
-    })))
+    // HIPAA [C3]: Set HttpOnly cookie + return token in body (for native apps)
+    let cookie_headers = make_auth_cookie(&token);
+    Ok((
+        cookie_headers,
+        Json(serde_json::json!({
+            "token": token,
+            "user_id": user_id,
+            "username": username,
+        })),
+    ).into_response())
 }
