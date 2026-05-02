@@ -119,6 +119,17 @@ export const api = {
   validateMfa: (userId: string, code: string) =>
     request('/mfa/validate', { method: 'POST', body: JSON.stringify({ user_id: userId, code }) }),
 
+  // Messages
+  toggleReaction: (messageId: string, emoji: string) =>
+    request(`/messages/${messageId}/reactions`, { method: 'POST', body: JSON.stringify({ emoji }) }),
+  toggleBookmark: (messageId: string) =>
+    request(`/messages/${messageId}/bookmark`, { method: 'POST' }),
+  threadReplies: (messageId: string) =>
+    request(`/messages/${messageId}/replies`),
+  deleteMessage: (messageId: string) =>
+    request(`/messages/${messageId}`, { method: 'DELETE' }),
+  listBookmarks: () => request('/bookmarks'),
+
   // Profile
   getProfile: () => request<{ display_name: string | null; role: string | null; avatar_url: string | null; theme: string; onboarded: boolean }>('/profile'),
   updateProfile: (data: { display_name?: string; role?: string; theme?: string }) =>

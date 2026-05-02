@@ -238,6 +238,92 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 }
             }
         }
+        ClientMsg::ThreadReply { channel_id, parent_id, content } => {
+            if content.len() > 4000 || content.trim().is_empty() {
+                send_error(state, user_id, "Invalid message");
+                return;
+            }
+
+            // Verify membership
+            let is_member = sqlx::query_as::<_, (Uuid,)>(
+                "SELECT channel_id FROM channel_members WHERE channel_id = $1 AND user_id = $2",
+            )
+            .bind(channel_id)
+            .bind(user_id)
+            .fetch_optional(&state.db)
+            .await;
+
+            if !matches!(is_member, Ok(Some(_))) {
+                send_error(state, user_id, "Not a member of this channel");
+                return;
+            }
+
+            // Insert thread reply
+            let row = sqlx::query_as::<_, (Uuid, chrono::DateTime<chrono::Utc>)>(
+                "INSERT INTO messages (channel_id, user_id, content, parent_id) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
+            )
+            .bind(channel_id)
+            .bind(user_id)
+            .bind(&content)
+            .bind(parent_id)
+            .fetch_one(&state.db)
+            .await;
+
+            let (msg_id, created_at) = match row {
+                Ok(r) => r,
+                Err(e) => {
+                    tracing::error!("Failed to insert thread reply: {e}");
+                    send_error(state, user_id, "Failed to send reply");
+                    return;
+                }
+            };
+
+            // Update parent reply count
+            let _ = sqlx::query(
+                "UPDATE messages SET reply_count = reply_count + 1, last_reply_at = $1 WHERE id = $2",
+            )
+            .bind(created_at)
+            .bind(parent_id)
+            .execute(&state.db)
+            .await;
+
+            // Get user profile for display
+            let profile = sqlx::query_as::<_, (Option<String>, Option<String>)>(
+                "SELECT display_name, avatar_url FROM users WHERE id = $1",
+            )
+            .bind(user_id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None)
+            .unwrap_or((None, None));
+
+            let reply_msg = ServerMsg::ThreadReply {
+                id: msg_id,
+                channel_id,
+                parent_id,
+                user_id,
+                username: username.to_string(),
+                display_name: profile.0,
+                avatar_url: profile.1,
+                content,
+                timestamp: created_at,
+            };
+
+            // Broadcast to channel members
+            let members = sqlx::query_as::<_, (Uuid,)>(
+                "SELECT user_id FROM channel_members WHERE channel_id = $1",
+            )
+            .bind(channel_id)
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default();
+
+            for (member_id,) in members {
+                if let Some(sender) = state.connections.get(&member_id) {
+                    let _ = sender.send(reply_msg.clone());
+                }
+            }
+        }
         ClientMsg::Typing { channel_id } => {
             // Broadcast typing indicator to channel members (except sender)
             let members = sqlx::query_as::<_, (Uuid,)>(

@@ -1,12 +1,14 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMessages } from '../../hooks/useMessages';
 import { useAppState } from '../../context/AppContext';
 
 interface MessageInputProps {
   send: (msg: object) => void;
+  quotePrefix?: string;
+  onClearQuote?: () => void;
 }
 
-export default function MessageInput({ send }: MessageInputProps) {
+export default function MessageInput({ send, quotePrefix, onClearQuote }: MessageInputProps) {
   const [content, setContent] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const lastTypingRef = useRef(0);
@@ -20,6 +22,15 @@ export default function MessageInput({ send }: MessageInputProps) {
       send({ type: 'typing', channel_id: state.currentChannelId });
     }
   }, [send, state.currentChannelId]);
+
+  // Apply quote prefix when it changes
+  useEffect(() => {
+    if (quotePrefix) {
+      setContent(quotePrefix);
+      onClearQuote?.();
+      inputRef.current?.focus();
+    }
+  }, [quotePrefix, onClearQuote]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

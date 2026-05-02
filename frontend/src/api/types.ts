@@ -23,6 +23,12 @@ export interface OnlineUser {
   username: string;
 }
 
+export interface ReactionData {
+  emoji: string;
+  count: number;
+  users: string[];
+}
+
 export interface MessageData {
   id: string;
   channel_id: string;
@@ -34,6 +40,10 @@ export interface MessageData {
   content: string;
   timestamp: string;
   created_at?: string;
+  parent_id?: string;
+  reply_count?: number;
+  last_reply_at?: string;
+  reactions?: ReactionData[];
 }
 
 export interface ChannelMember {
@@ -189,6 +199,35 @@ export interface WsTyping {
   username: string;
 }
 
+export interface WsReactionUpdate {
+  type: 'reaction_update';
+  message_id: string;
+  channel_id: string;
+  emoji: string;
+  user_id: string;
+  username: string;
+  added: boolean;
+}
+
+export interface WsThreadReply {
+  type: 'thread_reply';
+  id: string;
+  channel_id: string;
+  parent_id: string;
+  user_id: string;
+  username: string;
+  display_name?: string;
+  avatar_url?: string;
+  content: string;
+  timestamp: string;
+}
+
+export interface WsMessageDeleted {
+  type: 'message_deleted';
+  message_id: string;
+  channel_id: string;
+}
+
 export interface WsPong {
   type: 'pong';
 }
@@ -207,6 +246,9 @@ export type WsServerMsg =
   | WsCallSpeaking
   | WsCallNetworkQuality
   | WsTyping
+  | WsReactionUpdate
+  | WsThreadReply
+  | WsMessageDeleted
   | WsRtcSignal
   | WsError
   | WsPong;

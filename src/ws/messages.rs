@@ -19,6 +19,8 @@ pub enum ClientMsg {
     CallSpeaking { meeting_id: String, speaking: bool },
     CallNetworkQuality { meeting_id: String, quality: u8 },
     CallDecline { meeting_id: String },
+    // Thread reply
+    ThreadReply { channel_id: Uuid, parent_id: Uuid, content: String },
     // Typing indicator
     Typing { channel_id: Uuid },
     // WebRTC signaling
@@ -144,6 +146,32 @@ pub enum ServerMsg {
         channel_id: Uuid,
         user_id: Uuid,
         username: String,
+    },
+    // Reaction update
+    ReactionUpdate {
+        message_id: Uuid,
+        channel_id: Uuid,
+        emoji: String,
+        user_id: Uuid,
+        username: String,
+        added: bool,
+    },
+    // Thread reply (same as Message but with parent_id)
+    ThreadReply {
+        id: Uuid,
+        channel_id: Uuid,
+        parent_id: Uuid,
+        user_id: Uuid,
+        username: String,
+        display_name: Option<String>,
+        avatar_url: Option<String>,
+        content: String,
+        timestamp: DateTime<Utc>,
+    },
+    // Message deleted
+    MessageDeleted {
+        message_id: Uuid,
+        channel_id: Uuid,
     },
     // WebRTC signaling relay
     RtcSignal {

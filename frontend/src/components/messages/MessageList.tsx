@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useMessages } from '../../hooks/useMessages';
 import { useAppState } from '../../context/AppContext';
 import MessageItem from './MessageItem';
+import type { MessageData } from '../../api/types';
 
 function formatDate(date: Date): string {
   const today = new Date();
@@ -18,7 +19,12 @@ function formatDate(date: Date): string {
   });
 }
 
-export default function MessageList() {
+interface Props {
+  onOpenThread?: (msg: MessageData) => void;
+  onQuoteReply?: (msg: MessageData) => void;
+}
+
+export default function MessageList({ onOpenThread, onQuoteReply }: Props) {
   const { currentMessages } = useMessages();
   const state = useAppState();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -54,7 +60,6 @@ export default function MessageList() {
             new Date(msg.timestamp).getTime() - new Date(prev.timestamp).getTime() < 120000 &&
             new Date(msg.timestamp).toDateString() === new Date(prev.timestamp).toDateString();
 
-          // Date divider: show when date changes between messages
           const msgDate = new Date(msg.timestamp);
           const prevDate = prev ? new Date(prev.timestamp) : null;
           const showDateDivider = !prevDate || msgDate.toDateString() !== prevDate.toDateString();
@@ -70,6 +75,8 @@ export default function MessageList() {
                 message={msg}
                 isOwn={msg.user_id === state.userId}
                 isCompact={isCompact}
+                onOpenThread={onOpenThread}
+                onQuoteReply={onQuoteReply}
               />
             </div>
           );

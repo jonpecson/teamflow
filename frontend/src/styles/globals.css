@@ -1377,3 +1377,97 @@ a:hover { text-decoration: underline; }
   .call-btn, .invite-btn, .join-leave-btn { padding: 5px 10px; font-size: 12px; }
   .onboarding-modal { padding: 20px; }
 }
+
+/* ─── Phase 2: Message Hover Actions ─── */
+.msg-actions {
+  position: absolute; top: -14px; right: 20px;
+  display: flex; gap: 2px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 5;
+}
+.msg-action-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; color: var(--text-muted);
+  transition: all var(--transition);
+  border: none; background: none; cursor: pointer;
+}
+.msg-action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* More Menu */
+.msg-more-menu {
+  position: absolute; top: 100%; right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  z-index: 10;
+}
+.msg-more-menu button {
+  display: block; width: 100%;
+  padding: 8px 12px;
+  text-align: left; font-size: 13px;
+  color: var(--text-primary);
+  border-radius: 4px;
+  transition: background var(--transition);
+  border: none; background: none; cursor: pointer;
+}
+.msg-more-menu button:hover { background: var(--bg-hover); }
+.msg-more-menu button.danger { color: var(--danger); }
+.msg-more-menu button.danger:hover { background: rgba(239,68,68,0.1); }
+
+/* ─── Reactions ─── */
+.reaction-bar {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-top: 4px;
+}
+.reaction-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.reaction-chip:hover { background: var(--accent-bg); border-color: var(--accent); }
+.reaction-count { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+/* ─── Thread Reply Button ─── */
+.thread-reply-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 6px; padding: 4px 10px;
+  font-size: 12px; font-weight: 600;
+  color: var(--accent-light);
+  background: none; border: none; cursor: pointer;
+  border-radius: 4px;
+  transition: background var(--transition);
+}
+.thread-reply-btn:hover { background: var(--accent-bg); }
+
+/* ─── Markdown Toolbar ─── */
+.md-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--border);
+}
+.md-toolbar-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; color: var(--text-muted);
+  transition: all var(--transition);
+  border: none; background: none; cursor: pointer;
+  font-size: 14px; font-weight: 700;
+}
+.md-toolbar-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.md-toolbar-separator {
+  width: 1px; height: 18px;
+  background: var(--border); margin: 0 4px;
+}

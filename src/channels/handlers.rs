@@ -65,6 +65,10 @@ pub struct MessageResp {
     pub avatar_url: Option<String>,
     pub content: String,
     pub created_at: DateTime<Utc>,
+    pub parent_id: Option<Uuid>,
+    pub reply_count: i32,
+    pub last_reply_at: Option<DateTime<Utc>>,
+    pub reactions: Vec<crate::reactions::ReactionData>,
 }
 
 pub async fn list_channels(
@@ -388,13 +392,15 @@ pub async fn channel_history(
     let limit = params.limit.unwrap_or(50).min(200);
     let before = params.before.unwrap_or_else(|| Utc::now() + chrono::Duration::days(1));
 
-    // HIPAA: Fetch with encrypted content support + user profile data
-    let rows = sqlx::query_as::<_, (Uuid, Uuid, Uuid, String, String, Option<String>, Option<String>, Option<bool>, DateTime<Utc>, Option<String>, Option<String>, Option<String>)>(
+    // HIPAA: Fetch with encrypted content support + user profile data + threading
+    let rows = sqlx::query_as::<_, (Uuid, Uuid, Uuid, String, String, Option<String>, Option<String>, Option<bool>, DateTime<Utc>, Option<String>, Option<String>, Option<String>, Option<Uuid>, i32, Option<DateTime<Utc>>)>(
         "SELECT m.id, m.channel_id, m.user_id, u.username, m.content, \
          m.content_encrypted, m.content_nonce, m.encrypted, m.created_at, \
-         u.display_name, u.role, u.avatar_url \
+         u.display_name, u.role, u.avatar_url, \
+         m.parent_id, COALESCE(m.reply_count, 0), m.last_reply_at \
          FROM messages m JOIN users u ON u.id = m.user_id \
          WHERE m.channel_id = $1 AND m.created_at < $2 \
+         AND m.parent_id IS NULL AND m.deleted_at IS NULL \
          ORDER BY m.created_at DESC LIMIT $3",
     )
     .bind(channel_id)
@@ -404,6 +410,12 @@ pub async fn channel_history(
     .await?;
 
     let enc_key = state.config.message_encryption_key.as_deref();
+    let message_ids: Vec<Uuid> = rows.iter().map(|r| r.0).collect();
+
+    // Fetch reactions for all messages in batch
+    let reactions_map = crate::reactions::get_reactions_for_messages(&state.db, &message_ids)
+        .await
+        .unwrap_or_default();
 
     let mut messages: Vec<MessageResp> = rows
         .into_iter()
@@ -420,8 +432,9 @@ pub async fn channel_history(
             } else {
                 r.4.clone()
             };
+            let msg_id = r.0;
             MessageResp {
-                id: r.0,
+                id: msg_id,
                 channel_id: r.1,
                 user_id: r.2,
                 username: r.3,
@@ -430,6 +443,10 @@ pub async fn channel_history(
                 avatar_url: r.11,
                 content,
                 created_at: r.8,
+                parent_id: r.12,
+                reply_count: r.13,
+                last_reply_at: r.14,
+                reactions: reactions_map.get(&msg_id).cloned().unwrap_or_default(),
             }
         })
         .collect();

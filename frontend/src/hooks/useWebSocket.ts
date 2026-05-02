@@ -150,10 +150,28 @@ export function useWebSocket() {
 
         case 'typing':
           dispatch({ type: 'SET_TYPING', channelId: msg.channel_id, username: msg.username });
-          // Auto-clear after 3 seconds
           setTimeout(() => {
             dispatch({ type: 'CLEAR_TYPING', channelId: msg.channel_id, username: msg.username });
           }, 3000);
+          break;
+
+        case 'reaction_update':
+          dispatch({
+            type: 'UPDATE_REACTION',
+            channelId: msg.channel_id,
+            messageId: msg.message_id,
+            emoji: msg.emoji,
+            username: msg.username,
+            added: msg.added,
+          });
+          break;
+
+        case 'thread_reply':
+          dispatch({ type: 'ADD_THREAD_REPLY', channelId: msg.channel_id, parentId: msg.parent_id });
+          break;
+
+        case 'message_deleted':
+          dispatch({ type: 'DELETE_MESSAGE', channelId: msg.channel_id, messageId: msg.message_id });
           break;
 
         case 'rtc_signal':

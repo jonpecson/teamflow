@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, type ReactNode, type Dispatch } from 'react';
-import type { Channel, ActiveCall, MessageData, OnlineUser } from '../api/types';
+import type { Channel, ActiveCall, MessageData, OnlineUser, ReactionData } from '../api/types';
 
 export interface AppState {
   // Auth
@@ -61,7 +61,10 @@ export type AppAction =
   | { type: 'CLEAR_UNREAD'; channelId: string }
   | { type: 'ADD_DM_CHANNEL'; channel: Channel }
   | { type: 'SET_TYPING'; channelId: string; username: string }
-  | { type: 'CLEAR_TYPING'; channelId: string; username: string };
+  | { type: 'CLEAR_TYPING'; channelId: string; username: string }
+  | { type: 'UPDATE_REACTION'; channelId: string; messageId: string; emoji: string; username: string; added: boolean }
+  | { type: 'DELETE_MESSAGE'; channelId: string; messageId: string }
+  | { type: 'ADD_THREAD_REPLY'; channelId: string; parentId: string };
 
 const initialState: AppState = {
   token: localStorage.getItem('token'),
@@ -218,6 +221,48 @@ function appReducer(state: AppState, action: AppAction): AppState {
       if (channelTyping.size === 0) typing.delete(action.channelId);
       else typing.set(action.channelId, channelTyping);
       return { ...state, typingUsers: typing };
+    }
+    case 'UPDATE_REACTION': {
+      const msgs = new Map(state.messages);
+      const channelMsgs = msgs.get(action.channelId);
+      if (!channelMsgs) return state;
+      const updated = channelMsgs.map((m) => {
+        if (m.id !== action.messageId) return m;
+        const reactions = [...(m.reactions || [])];
+        const idx = reactions.findIndex((r) => r.emoji === action.emoji);
+        if (action.added) {
+          if (idx >= 0) {
+            reactions[idx] = { ...reactions[idx], count: reactions[idx].count + 1, users: [...reactions[idx].users, action.username] };
+          } else {
+            reactions.push({ emoji: action.emoji, count: 1, users: [action.username] });
+          }
+        } else if (idx >= 0) {
+          const newCount = reactions[idx].count - 1;
+          if (newCount <= 0) reactions.splice(idx, 1);
+          else reactions[idx] = { ...reactions[idx], count: newCount, users: reactions[idx].users.filter((u) => u !== action.username) };
+        }
+        return { ...m, reactions };
+      });
+      msgs.set(action.channelId, updated);
+      return { ...state, messages: msgs };
+    }
+    case 'DELETE_MESSAGE': {
+      const msgs = new Map(state.messages);
+      const channelMsgs = msgs.get(action.channelId);
+      if (!channelMsgs) return state;
+      msgs.set(action.channelId, channelMsgs.filter((m) => m.id !== action.messageId));
+      return { ...state, messages: msgs };
+    }
+    case 'ADD_THREAD_REPLY': {
+      const msgs = new Map(state.messages);
+      const channelMsgs = msgs.get(action.channelId);
+      if (!channelMsgs) return state;
+      const updated = channelMsgs.map((m) => {
+        if (m.id !== action.parentId) return m;
+        return { ...m, reply_count: (m.reply_count || 0) + 1, last_reply_at: new Date().toISOString() };
+      });
+      msgs.set(action.channelId, updated);
+      return { ...state, messages: msgs };
     }
     default:
       return state;

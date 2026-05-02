@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import ChatHeader from './ChatHeader';
 import MessageList from '../messages/MessageList';
 import MessageInput from '../messages/MessageInput';
+import ThreadPanel from '../messages/ThreadPanel';
 import { requestNotificationPermission } from '../../utils/notifications';
 import HuddleRoom from '../huddle/HuddleRoom';
 import HuddleMiniWindow from '../huddle/HuddleMiniWindow';
@@ -15,6 +16,7 @@ import { usePresence } from '../../hooks/usePresence';
 import { useCalls } from '../../hooks/useCalls';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useAppState } from '../../context/AppContext';
+import type { MessageData } from '../../api/types';
 
 export default function AppLayout() {
   const { loadChannels, currentChannelId, myChannelIds, channels, dmChannels } = useChannels();
@@ -28,6 +30,8 @@ export default function AppLayout() {
   const [showInviteCode, setShowInviteCode] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [threadMessage, setThreadMessage] = useState<MessageData | null>(null);
+  const [quotePrefix, setQuotePrefix] = useState('');
 
   useEffect(() => {
     loadChannels();
@@ -38,10 +42,21 @@ export default function AppLayout() {
     return () => clearInterval(pollInterval);
   }, [loadChannels, loadUsers, loadActiveCalls]);
 
-  // Close detail panel when switching channels
+  // Close panels when switching channels
   useEffect(() => {
     setShowDetail(false);
+    setThreadMessage(null);
   }, [currentChannelId]);
+
+  const handleOpenThread = useCallback((msg: MessageData) => {
+    setThreadMessage(msg);
+    setShowDetail(false);
+  }, []);
+
+  const handleQuoteReply = useCallback((msg: MessageData) => {
+    const name = msg.display_name || msg.username;
+    setQuotePrefix(`> **${name}:** ${msg.content.slice(0, 100)}${msg.content.length > 100 ? '...' : ''}\n`);
+  }, []);
 
   // Auto-leave call on tab close/refresh
   useEffect(() => {
@@ -94,10 +109,17 @@ export default function AppLayout() {
         ) : (
           <div className="chat-body">
             <div className="chat-content">
-              <MessageList />
-              {isMember && <MessageInput send={send} />}
+              <MessageList onOpenThread={handleOpenThread} onQuoteReply={handleQuoteReply} />
+              {isMember && <MessageInput send={send} quotePrefix={quotePrefix} onClearQuote={() => setQuotePrefix('')} />}
             </div>
-            {showDetail && currentChannelId && currentChannel && (
+            {threadMessage && (
+              <ThreadPanel
+                parentMessage={threadMessage}
+                send={send}
+                onClose={() => setThreadMessage(null)}
+              />
+            )}
+            {showDetail && currentChannelId && currentChannel && !threadMessage && (
               <ChannelDetailPanel
                 channelId={currentChannelId}
                 channelName={currentChannel.name}

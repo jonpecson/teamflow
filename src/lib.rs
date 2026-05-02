@@ -1,14 +1,17 @@
 pub mod audit;
 pub mod auth;
+pub mod bookmarks;
 pub mod calls;
 pub mod channels;
 pub mod config;
 pub mod crypto;
 pub mod error;
 pub mod invites;
+pub mod messages;
 pub mod mfa;
 pub mod profile;
 pub mod push;
+pub mod reactions;
 pub mod retention;
 pub mod state;
 pub mod ws;
@@ -230,6 +233,11 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         .route("/profile", get(profile::get_profile))
         .route("/profile", axum::routing::put(profile::update_profile))
         .route("/avatar", post(profile::upload_avatar))
+        .route("/messages/{id}/reactions", post(reactions::toggle_reaction))
+        .route("/messages/{id}/bookmark", post(bookmarks::toggle_bookmark))
+        .route("/messages/{id}/replies", get(messages::thread_replies))
+        .route("/messages/{id}", axum::routing::delete(messages::delete_message))
+        .route("/bookmarks", get(bookmarks::list_bookmarks))
         .route("/online", get(online_users))
         .route("/turn-credentials", get(turn_credentials))
         .route("/health", get(health));
