@@ -7,6 +7,7 @@ import { useAppState } from '../../context/AppContext';
 import { api } from '../../api/client';
 import MessageActions from './MessageActions';
 import EmojiPicker from './EmojiPicker';
+import Attachment from './Attachment';
 
 interface MessageItemProps {
   message: MessageData;
@@ -38,6 +39,7 @@ export default function MessageItem({ message, isOwn, isCompact, onOpenThread, o
   const displayName = message.display_name || message.username;
   const avatarUrl = message.avatar_url;
   const reactions = message.reactions || [];
+  const attachments = message.attachments || [];
   const replyCount = message.reply_count || 0;
 
   const handleEmojiSelect = async (emoji: string) => {
@@ -91,7 +93,11 @@ export default function MessageItem({ message, isOwn, isCompact, onOpenThread, o
           {message.role && <span className="msg-role">{message.role}</span>}
           <span className="msg-time">{timeStr}</span>
         </div>
-        <div className="msg-text" dangerouslySetInnerHTML={{ __html: linkify(escapeMessage(message.content)) }} />
+        {/* Hide text for pure attachment messages */}
+        {!message.content.startsWith('[image:') && !message.content.startsWith('[file:') && (
+          <div className="msg-text" dangerouslySetInnerHTML={{ __html: linkify(escapeMessage(message.content)) }} />
+        )}
+        {attachments.map((a) => <Attachment key={a.id} attachment={a} />)}
         {reactions.length > 0 && <ReactionBar reactions={reactions} messageId={message.id} />}
         {replyCount > 0 && (
           <button className="thread-reply-btn" onClick={() => onOpenThread?.(message)}>

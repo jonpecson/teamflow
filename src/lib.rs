@@ -6,6 +6,7 @@ pub mod channels;
 pub mod config;
 pub mod crypto;
 pub mod error;
+pub mod files;
 pub mod invites;
 pub mod messages;
 pub mod mfa;
@@ -233,6 +234,8 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         .route("/profile", get(profile::get_profile))
         .route("/profile", axum::routing::put(profile::update_profile))
         .route("/avatar", post(profile::upload_avatar))
+        .route("/channels/{id}/upload", post(files::upload_file))
+        .route("/messages/{id}/attachments", get(files::message_attachments))
         .route("/messages/{id}/reactions", post(reactions::toggle_reaction))
         .route("/messages/{id}/bookmark", post(bookmarks::toggle_bookmark))
         .route("/messages/{id}/replies", get(messages::thread_replies))

@@ -128,6 +128,22 @@ export const api = {
     request(`/messages/${messageId}/replies`),
   deleteMessage: (messageId: string) =>
     request(`/messages/${messageId}`, { method: 'DELETE' }),
+  uploadFile: (channelId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`${BASE}/channels/${channelId}/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { ...authHeaders() },
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(body.error || 'Upload failed');
+      }
+      return res.json();
+    });
+  },
   listBookmarks: () => request('/bookmarks'),
 
   // Profile

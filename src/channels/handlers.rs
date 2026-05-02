@@ -69,6 +69,7 @@ pub struct MessageResp {
     pub reply_count: i32,
     pub last_reply_at: Option<DateTime<Utc>>,
     pub reactions: Vec<crate::reactions::ReactionData>,
+    pub attachments: Vec<crate::files::AttachmentResp>,
 }
 
 pub async fn list_channels(
@@ -412,8 +413,12 @@ pub async fn channel_history(
     let enc_key = state.config.message_encryption_key.as_deref();
     let message_ids: Vec<Uuid> = rows.iter().map(|r| r.0).collect();
 
-    // Fetch reactions for all messages in batch
+    // Fetch reactions and attachments for all messages in batch
     let reactions_map = crate::reactions::get_reactions_for_messages(&state.db, &message_ids)
+        .await
+        .unwrap_or_default();
+
+    let attachments_map = get_attachments_for_messages(&state.db, &message_ids)
         .await
         .unwrap_or_default();
 
@@ -447,12 +452,43 @@ pub async fn channel_history(
                 reply_count: r.13,
                 last_reply_at: r.14,
                 reactions: reactions_map.get(&msg_id).cloned().unwrap_or_default(),
+                attachments: attachments_map.get(&msg_id).cloned().unwrap_or_default(),
             }
         })
         .collect();
 
     messages.reverse(); // oldest first
     Ok(Json(messages))
+}
+
+async fn get_attachments_for_messages(
+    db: &sqlx::PgPool,
+    message_ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, Vec<crate::files::AttachmentResp>>, sqlx::Error> {
+    if message_ids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let rows = sqlx::query_as::<_, (Uuid, Uuid, String, i64, String, String, Option<i32>, Option<i32>)>(
+        "SELECT message_id, id, file_name, file_size, content_type, url, width, height \
+         FROM message_attachments WHERE message_id = ANY($1) ORDER BY created_at",
+    )
+    .bind(message_ids)
+    .fetch_all(db)
+    .await?;
+
+    let mut result: std::collections::HashMap<Uuid, Vec<crate::files::AttachmentResp>> = std::collections::HashMap::new();
+    for r in rows {
+        result.entry(r.0).or_default().push(crate::files::AttachmentResp {
+            id: r.1,
+            file_name: r.2,
+            file_size: r.3,
+            content_type: r.4,
+            url: r.5,
+            width: r.6,
+            height: r.7,
+        });
+    }
+    Ok(result)
 }
 
 pub async fn my_channels(

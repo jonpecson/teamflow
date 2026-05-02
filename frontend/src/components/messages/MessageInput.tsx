@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useMessages } from '../../hooks/useMessages';
 import { useAppState } from '../../context/AppContext';
+import { api } from '../../api/client';
 
 interface MessageInputProps {
   send: (msg: object) => void;
@@ -12,7 +13,9 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
   const [content, setContent] = useState('');
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const lastTypingRef = useRef(0);
   const { sendMessage } = useMessages();
   const state = useAppState();
@@ -111,6 +114,20 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
     inputRef.current?.focus();
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !state.currentChannelId) return;
+    setUploading(true);
+    try {
+      await api.uploadFile(state.currentChannelId, file);
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   // Markdown toolbar insert helpers
   const insertMd = (prefix: string, suffix: string = prefix) => {
     const input = inputRef.current;
@@ -194,6 +211,19 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
             <button type="button" className="md-toolbar-btn" title="Bulleted list" onClick={() => insertMd('- ', '')}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
             </button>
+            <div className="md-toolbar-separator" />
+            <button type="button" className="md-toolbar-btn" title={uploading ? 'Uploading...' : 'Attach file'} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
           </div>
         </div>
       </div>

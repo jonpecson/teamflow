@@ -29,6 +29,16 @@ export interface ReactionData {
   users: string[];
 }
 
+export interface AttachmentData {
+  id: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+  url: string;
+  width?: number;
+  height?: number;
+}
+
 export interface MessageData {
   id: string;
   channel_id: string;
@@ -44,6 +54,7 @@ export interface MessageData {
   reply_count?: number;
   last_reply_at?: string;
   reactions?: ReactionData[];
+  attachments?: AttachmentData[];
 }
 
 export interface ChannelMember {
