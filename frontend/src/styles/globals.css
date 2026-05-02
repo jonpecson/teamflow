@@ -937,7 +937,7 @@ a:hover { text-decoration: underline; }
   display: flex; flex-direction: column; flex: 1; min-height: 0;
   background: var(--bg-base);
 }
-.huddle-room:not(.hidden) ~ .messages, .huddle-room:not(.hidden) ~ .message-form { display: none !important; }
+/* Messages are now hidden via React layout, not CSS */
 .huddle-room-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 20px; border-bottom: 1px solid var(--border);

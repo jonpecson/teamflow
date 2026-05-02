@@ -111,9 +111,10 @@ export default function AppLayout() {
               />
             )}
 
-            {isInCallOnCurrentChannel ? (
+            {isInCallOnCurrentChannel && (
               <HuddleRoom send={send} setRtcSignalHandler={setRtcSignalHandler} />
-            ) : (
+            )}
+            {!isInCallOnCurrentChannel && (
               <div className="chat-body">
                 <div className="chat-content">
                   <MessageList onOpenThread={handleOpenThread} onQuoteReply={handleQuoteReply} />
@@ -136,6 +137,9 @@ export default function AppLayout() {
                   />
                 )}
               </div>
+            )}
+            {isInCallOnCurrentChannel && isMember && (
+              <MessageInput send={send} quotePrefix={quotePrefix} onClearQuote={() => setQuotePrefix('')} />
             )}
           </>
         )}
