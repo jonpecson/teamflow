@@ -1471,3 +1471,72 @@ a:hover { text-decoration: underline; }
   width: 1px; height: 18px;
   background: var(--border); margin: 0 4px;
 }
+
+/* ─── @Mention Autocomplete ─── */
+.mention-dropdown {
+  position: absolute; bottom: 100%; left: 0; right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.2);
+  z-index: 20;
+  max-height: 240px; overflow-y: auto;
+}
+.mention-option {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 8px 10px;
+  text-align: left; font-size: 13px;
+  color: var(--text-primary);
+  border-radius: 4px; border: none; background: none;
+  cursor: pointer; transition: background var(--transition);
+}
+.mention-option:hover, .mention-option.active { background: var(--accent-bg); }
+.mention-at { color: var(--accent-light); font-weight: 700; }
+
+/* ─── Mention Pills (in messages) ─── */
+.mention-pill {
+  display: inline;
+  padding: 1px 4px;
+  background: var(--mention-bg);
+  color: var(--mention-color);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: inherit;
+}
+.mention-pill.mention-special {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+/* ─── Markdown Rendering ─── */
+.md-code {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.md-code-block {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin: 4px 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+.md-quote {
+  border-left: 3px solid var(--accent);
+  padding: 4px 12px;
+  margin: 4px 0;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.msg-text strong { font-weight: 700; }
+.msg-text em { font-style: italic; }
+.msg-text del { text-decoration: line-through; color: var(--text-muted); }
