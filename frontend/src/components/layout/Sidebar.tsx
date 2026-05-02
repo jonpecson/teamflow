@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useChannels } from '../../hooks/useChannels';
 import { usePresence } from '../../hooks/usePresence';
@@ -129,7 +130,10 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
         </div>
       </div>
 
-      {showMfa && <SettingsModal onClose={() => setShowMfa(false)} onShowInviteCode={onShowInviteCode} />}
+      {showMfa && createPortal(
+        <SettingsModal onClose={() => setShowMfa(false)} onShowInviteCode={onShowInviteCode} />,
+        document.body
+      )}
     </aside>
   );
 }

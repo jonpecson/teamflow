@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { api } from '../../api/client';
 
 interface Props {
@@ -8,6 +9,15 @@ interface Props {
 interface MfaSetupData {
   secret: string;
   uri: string;
+}
+
+function QrImage({ data }: { data: string }) {
+  const [src, setSrc] = useState('');
+  useEffect(() => {
+    QRCode.toDataURL(data, { width: 200, margin: 1 }).then(setSrc);
+  }, [data]);
+  if (!src) return <div style={{ width: 200, height: 200 }} />;
+  return <img src={src} alt="QR Code" width={200} height={200} style={{ borderRadius: 8 }} />;
 }
 
 export default function MfaSetup({ onClose }: Props) {
@@ -73,17 +83,10 @@ export default function MfaSetup({ onClose }: Props) {
               Scan this QR code with your authenticator app, or enter the secret key manually.
             </p>
 
-            {/* QR Code — rendered as a link to a QR generator */}
             <div style={{
               background: '#fff', borderRadius: 12, padding: 16, textAlign: 'center', marginBottom: 16
             }}>
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.uri)}`}
-                alt="QR Code"
-                width={200}
-                height={200}
-                style={{ borderRadius: 8 }}
-              />
+              <QrImage data={setupData.uri} />
             </div>
 
             <div style={{
