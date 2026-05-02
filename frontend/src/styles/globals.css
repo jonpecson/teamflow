@@ -1128,6 +1128,53 @@ a:hover { text-decoration: underline; }
 .channel-detail-you { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
 .channel-detail-member-role { display: block; font-size: 11px; color: var(--text-muted); }
 
+/* ─── Settings Modal ─── */
+.settings-modal { width: 420px; max-width: 90vw; padding: 0; }
+.settings-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--glass-border);
+}
+.settings-header h3 { font-size: 18px; font-weight: 700; }
+.settings-close { font-size: 24px; color: var(--text-muted); line-height: 1; transition: color var(--transition); }
+.settings-close:hover { color: var(--text-primary); }
+.settings-section { padding: 12px 16px; border-bottom: 1px solid var(--glass-border); }
+.settings-section:last-of-type { border-bottom: none; }
+.settings-section-title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-muted); font-weight: 700; padding: 4px 8px 8px;
+}
+.settings-profile {
+  display: flex; align-items: center; gap: 14px; padding: 8px;
+}
+.settings-avatar {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 18px; color: #fff; flex-shrink: 0;
+}
+.settings-username { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.settings-role { font-size: 12px; color: var(--text-muted); }
+.settings-item {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 12px 8px; border-radius: var(--radius); cursor: pointer;
+  transition: background var(--transition); background: none; border: none;
+  color: var(--text-primary); text-align: left; font: inherit;
+}
+.settings-item:hover { background: rgba(255,255,255,0.04); }
+.settings-item-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(124,58,237,0.1); color: var(--accent-light);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.settings-item-content { flex: 1; min-width: 0; }
+.settings-item-label { font-size: 14px; font-weight: 500; }
+.settings-item-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.settings-item-danger .settings-item-icon { background: rgba(239,68,68,0.1); color: var(--danger); }
+.settings-item-danger .settings-item-label { color: var(--danger); }
+
+@media (max-width: 480px) {
+  .settings-modal { width: 100%; max-width: 100%; border-radius: 0; min-height: 100vh; }
+}
+
 /* ─── Mobile Menu Button (hidden on desktop) ─── */
 .mobile-menu-btn { display: none; }
 

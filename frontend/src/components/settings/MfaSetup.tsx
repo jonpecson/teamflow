@@ -48,9 +48,9 @@ export default function MfaSetup({ onClose }: Props) {
 
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content" style={{ width: 420, maxWidth: '90vw' }}>
+      <div className="modal-content settings-modal">
         {step === 'intro' && (
-          <>
+          <div style={{ padding: '20px 24px' }}>
             <h3>Enable Two-Factor Authentication</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
               Add an extra layer of security to your account. You'll need an authenticator app like
@@ -63,11 +63,11 @@ export default function MfaSetup({ onClose }: Props) {
               </button>
             </div>
             {error && <p className="error" style={{ marginTop: 12 }}>{error}</p>}
-          </>
+          </div>
         )}
 
         {step === 'scan' && setupData && (
-          <>
+          <div style={{ padding: '20px 24px' }}>
             <h3>Scan QR Code</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16 }}>
               Scan this QR code with your authenticator app, or enter the secret key manually.
@@ -102,11 +102,11 @@ export default function MfaSetup({ onClose }: Props) {
             <button className="btn-primary" style={{ width: '100%' }} onClick={() => setStep('verify')}>
               I've scanned the code
             </button>
-          </>
+          </div>
         )}
 
         {step === 'verify' && (
-          <>
+          <div style={{ padding: '20px 24px' }}>
             <h3>Verify Code</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16 }}>
               Enter the 6-digit code from your authenticator app to confirm setup.
@@ -132,11 +132,11 @@ export default function MfaSetup({ onClose }: Props) {
                 </button>
               </div>
             </form>
-          </>
+          </div>
         )}
 
         {step === 'done' && (
-          <>
+          <div style={{ padding: '20px 24px' }}>
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" style={{ marginBottom: 12 }}>
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -149,7 +149,7 @@ export default function MfaSetup({ onClose }: Props) {
               </p>
             </div>
             <button className="btn-primary" style={{ width: '100%' }} onClick={onClose}>Done</button>
-          </>
+          </div>
         )}
       </div>
     </div>
