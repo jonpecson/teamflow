@@ -351,6 +351,7 @@ a:hover { text-decoration: underline; }
 /* Message bubbles */
 .msg { padding: 4px 0; display: flex; gap: 12px; animation: msgFadeIn 0.2s ease; }
 .msg.compact { padding: 1px 0 1px 48px; }
+.msg.own.compact { padding-left: 0; padding-right: 48px; }
 @keyframes msgFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 .msg-avatar {
@@ -906,6 +907,7 @@ a:hover { text-decoration: underline; }
 }
 .huddle-chat-messages .msg { gap: 8px; }
 .huddle-chat-messages .msg.compact { padding-left: 36px; }
+.huddle-chat-messages .msg.own.compact { padding-left: 0; padding-right: 36px; }
 .huddle-chat-empty {
   flex: 1; display: flex; align-items: center; justify-content: center;
   color: var(--text-muted); font-size: 13px;
@@ -1214,6 +1216,7 @@ a:hover { text-decoration: underline; }
   .msg-avatar { width: 28px; height: 28px; font-size: 11px; }
   .msg-text { max-width: 85%; font-size: 14px; padding: 8px 12px; }
   .msg.compact { padding-left: 36px; }
+  .msg.own.compact { padding-left: 0; padding-right: 36px; }
   .msg-user { font-size: 13px; }
   .msg-time { font-size: 10px; }
   .msg.own .msg-text { max-width: 85%; }
