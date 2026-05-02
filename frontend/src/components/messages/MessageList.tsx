@@ -3,6 +3,21 @@ import { useMessages } from '../../hooks/useMessages';
 import { useAppState } from '../../context/AppContext';
 import MessageItem from './MessageItem';
 
+function formatDate(date: Date): string {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
 export default function MessageList() {
   const { currentMessages } = useMessages();
   const state = useAppState();
@@ -36,14 +51,27 @@ export default function MessageList() {
         currentMessages.map((msg, i) => {
           const prev = i > 0 ? currentMessages[i - 1] : null;
           const isCompact = prev?.user_id === msg.user_id &&
-            new Date(msg.timestamp).getTime() - new Date(prev.timestamp).getTime() < 120000;
+            new Date(msg.timestamp).getTime() - new Date(prev.timestamp).getTime() < 120000 &&
+            new Date(msg.timestamp).toDateString() === new Date(prev.timestamp).toDateString();
+
+          // Date divider: show when date changes between messages
+          const msgDate = new Date(msg.timestamp);
+          const prevDate = prev ? new Date(prev.timestamp) : null;
+          const showDateDivider = !prevDate || msgDate.toDateString() !== prevDate.toDateString();
+
           return (
-            <MessageItem
-              key={msg.id}
-              message={msg}
-              isOwn={msg.user_id === state.userId}
-              isCompact={isCompact}
-            />
+            <div key={msg.id}>
+              {showDateDivider && (
+                <div className="date-divider">
+                  <span>{formatDate(msgDate)}</span>
+                </div>
+              )}
+              <MessageItem
+                message={msg}
+                isOwn={msg.user_id === state.userId}
+                isCompact={isCompact}
+              />
+            </div>
           );
         })
       )}

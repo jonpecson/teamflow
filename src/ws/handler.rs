@@ -238,6 +238,30 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 }
             }
         }
+        ClientMsg::Typing { channel_id } => {
+            // Broadcast typing indicator to channel members (except sender)
+            let members = sqlx::query_as::<_, (Uuid,)>(
+                "SELECT user_id FROM channel_members WHERE channel_id = $1",
+            )
+            .bind(channel_id)
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default();
+
+            let typing_msg = ServerMsg::Typing {
+                channel_id,
+                user_id,
+                username: username.to_string(),
+            };
+
+            for (member_id,) in members {
+                if member_id != user_id {
+                    if let Some(sender) = state.connections.get(&member_id) {
+                        let _ = sender.send(typing_msg.clone());
+                    }
+                }
+            }
+        }
         ClientMsg::JoinChannel { channel_id } => {
             let exists = sqlx::query_as::<_, (Uuid,)>("SELECT id FROM channels WHERE id = $1")
                 .bind(channel_id)

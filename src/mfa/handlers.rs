@@ -109,13 +109,17 @@ pub async fn validate_mfa(
     Json(body): Json<MfaValidateReq>,
 ) -> Result<Json<crate::auth::handlers::AuthResp>, AppError> {
     // Look up user by the temporary MFA token
-    let (user_id, username, totp_secret): (uuid::Uuid, String, String) = sqlx::query_as(
-        "SELECT id, username, totp_secret FROM users WHERE id = $1 AND mfa_enabled = true",
+    let row: (uuid::Uuid, String, String, Option<String>, Option<String>, Option<String>, String, bool) = sqlx::query_as(
+        "SELECT id, username, totp_secret, display_name, role, avatar_url, theme, onboarded \
+         FROM users WHERE id = $1 AND mfa_enabled = true",
     )
     .bind(body.user_id)
     .fetch_optional(&state.db)
     .await?
     .ok_or_else(|| AppError::BadRequest("Invalid MFA session".into()))?;
+
+    let (user_id, username, totp_secret) = (row.0, row.1, row.2);
+    let (display_name, role, avatar_url, theme, onboarded) = (row.3, row.4, row.5, row.6, row.7);
 
     if !super::verify_totp(&totp_secret, &body.code) {
         crate::audit::log_mfa_event(&state.db, user_id, "validate", false).await;
@@ -137,6 +141,11 @@ pub async fn validate_mfa(
         token,
         user_id,
         username,
+        display_name,
+        role,
+        avatar_url,
+        theme,
+        onboarded,
     }))
 }
 

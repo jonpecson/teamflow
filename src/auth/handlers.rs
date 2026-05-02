@@ -44,6 +44,11 @@ pub struct AuthResp {
     pub token: String,
     pub user_id: uuid::Uuid,
     pub username: String,
+    pub display_name: Option<String>,
+    pub role: Option<String>,
+    pub avatar_url: Option<String>,
+    pub theme: String,
+    pub onboarded: bool,
 }
 
 pub async fn register(
@@ -144,6 +149,11 @@ pub async fn register(
             token,
             user_id: row.0,
             username: username.to_string(),
+            display_name: None,
+            role: None,
+            avatar_url: None,
+            theme: "system".to_string(),
+            onboarded: false,
         }),
     ))
 }
@@ -155,9 +165,10 @@ pub async fn login(
     // HIPAA: Generic error message prevents username enumeration [M3]
     let auth_error = || AppError::Auth("Authentication failed".into());
 
-    let row = sqlx::query_as::<_, (uuid::Uuid, String, String, bool, i32, Option<chrono::DateTime<chrono::Utc>>)>(
+    let row = sqlx::query_as::<_, (uuid::Uuid, String, String, bool, i32, Option<chrono::DateTime<chrono::Utc>>, Option<String>, Option<String>, Option<String>, String, bool)>(
         "SELECT id, username, password_hash, COALESCE(mfa_enabled, false), \
-         COALESCE(failed_login_attempts, 0), locked_until \
+         COALESCE(failed_login_attempts, 0), locked_until, \
+         display_name, role, avatar_url, theme, onboarded \
          FROM users WHERE username = $1",
     )
     .bind(&body.username)
@@ -166,7 +177,9 @@ pub async fn login(
     .ok_or_else(auth_error)?;
 
     let (user_id, username, hash, mfa_enabled, failed_attempts, locked_until) =
-        (row.0, row.1, row.2, row.3, row.4, row.5);
+        (row.0, row.1.clone(), row.2, row.3, row.4, row.5);
+    let (display_name, role, avatar_url, theme, onboarded) =
+        (row.6, row.7, row.8, row.9, row.10);
 
     // HIPAA: Account lockout after 5 failed attempts [H2/4.2]
     if let Some(locked) = locked_until {
@@ -231,6 +244,11 @@ pub async fn login(
             "token": token,
             "user_id": user_id,
             "username": username,
+            "display_name": display_name,
+            "role": role,
+            "avatar_url": avatar_url,
+            "theme": theme,
+            "onboarded": onboarded,
         })),
     ).into_response())
 }

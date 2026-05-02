@@ -29,6 +29,9 @@ export interface AppState {
 
   // Unread
   unreadCounts: Map<string, number>;
+
+  // Typing
+  typingUsers: Map<string, Map<string, number>>; // channelId -> Map<username, timestamp>
 }
 
 export type AppAction =
@@ -56,7 +59,9 @@ export type AppAction =
   | { type: 'TOGGLE_CAMERA' }
   | { type: 'INCREMENT_UNREAD'; channelId: string }
   | { type: 'CLEAR_UNREAD'; channelId: string }
-  | { type: 'ADD_DM_CHANNEL'; channel: Channel };
+  | { type: 'ADD_DM_CHANNEL'; channel: Channel }
+  | { type: 'SET_TYPING'; channelId: string; username: string }
+  | { type: 'CLEAR_TYPING'; channelId: string; username: string };
 
 const initialState: AppState = {
   token: localStorage.getItem('token'),
@@ -75,6 +80,7 @@ const initialState: AppState = {
   cameraEnabled: false,
   callStartTime: null,
   unreadCounts: new Map(),
+  typingUsers: new Map(),
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -197,6 +203,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'ADD_DM_CHANNEL': {
       if (state.dmChannels.some((c) => c.id === action.channel.id)) return state;
       return { ...state, dmChannels: [...state.dmChannels, action.channel] };
+    }
+    case 'SET_TYPING': {
+      const typing = new Map(state.typingUsers);
+      const channelTyping = new Map(typing.get(action.channelId) || []);
+      channelTyping.set(action.username, Date.now());
+      typing.set(action.channelId, channelTyping);
+      return { ...state, typingUsers: typing };
+    }
+    case 'CLEAR_TYPING': {
+      const typing = new Map(state.typingUsers);
+      const channelTyping = new Map(typing.get(action.channelId) || []);
+      channelTyping.delete(action.username);
+      if (channelTyping.size === 0) typing.delete(action.channelId);
+      else typing.set(action.channelId, channelTyping);
+      return { ...state, typingUsers: typing };
     }
     default:
       return state;

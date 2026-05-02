@@ -148,6 +148,14 @@ export function useWebSocket() {
           SoundEngine.playLeave();
           break;
 
+        case 'typing':
+          dispatch({ type: 'SET_TYPING', channelId: msg.channel_id, username: msg.username });
+          // Auto-clear after 3 seconds
+          setTimeout(() => {
+            dispatch({ type: 'CLEAR_TYPING', channelId: msg.channel_id, username: msg.username });
+          }, 3000);
+          break;
+
         case 'rtc_signal':
           rtcHandlerRef.current?.(msg.from_user, msg.signal_type, msg.data);
           break;

@@ -19,6 +19,8 @@ pub enum ClientMsg {
     CallSpeaking { meeting_id: String, speaking: bool },
     CallNetworkQuality { meeting_id: String, quality: u8 },
     CallDecline { meeting_id: String },
+    // Typing indicator
+    Typing { channel_id: Uuid },
     // WebRTC signaling
     RtcSignal {
         meeting_id: String,
@@ -135,6 +137,12 @@ pub enum ServerMsg {
     CallDeclined {
         meeting_id: String,
         channel_id: Uuid,
+        username: String,
+    },
+    // Typing indicator
+    Typing {
+        channel_id: Uuid,
+        user_id: Uuid,
         username: String,
     },
     // WebRTC signaling relay

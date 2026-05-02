@@ -28,6 +28,9 @@ pub struct ChannelResp {
 pub struct UserResp {
     pub id: Uuid,
     pub username: String,
+    pub display_name: Option<String>,
+    pub role: Option<String>,
+    pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -40,6 +43,9 @@ pub struct InviteReq {
 pub struct MemberResp {
     pub user_id: Uuid,
     pub username: String,
+    pub display_name: Option<String>,
+    pub role: Option<String>,
+    pub avatar_url: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -54,6 +60,9 @@ pub struct MessageResp {
     pub channel_id: Uuid,
     pub user_id: Uuid,
     pub username: String,
+    pub display_name: Option<String>,
+    pub role: Option<String>,
+    pub avatar_url: Option<String>,
     pub content: String,
     pub created_at: DateTime<Utc>,
 }
@@ -85,8 +94,8 @@ pub async fn list_users(
     State(state): State<AppState>,
     _claims: Claims,
 ) -> Result<Json<Vec<UserResp>>, AppError> {
-    let rows = sqlx::query_as::<_, (Uuid, String, DateTime<Utc>)>(
-        "SELECT id, username, created_at FROM users ORDER BY username",
+    let rows = sqlx::query_as::<_, (Uuid, String, Option<String>, Option<String>, Option<String>, DateTime<Utc>)>(
+        "SELECT id, username, display_name, role, avatar_url, created_at FROM users ORDER BY COALESCE(display_name, username)",
     )
     .fetch_all(&state.db)
     .await?;
@@ -96,7 +105,10 @@ pub async fn list_users(
             .map(|r| UserResp {
                 id: r.0,
                 username: r.1,
-                created_at: r.2,
+                display_name: r.2,
+                role: r.3,
+                avatar_url: r.4,
+                created_at: r.5,
             })
             .collect(),
     ))
@@ -345,8 +357,10 @@ pub async fn channel_members(
     _claims: Claims,
     Path(channel_id): Path<Uuid>,
 ) -> Result<Json<Vec<MemberResp>>, AppError> {
-    let rows = sqlx::query_as::<_, (Uuid, String)>(
-        "SELECT u.id, u.username FROM channel_members cm JOIN users u ON u.id = cm.user_id WHERE cm.channel_id = $1 ORDER BY u.username",
+    let rows = sqlx::query_as::<_, (Uuid, String, Option<String>, Option<String>, Option<String>)>(
+        "SELECT u.id, u.username, u.display_name, u.role, u.avatar_url \
+         FROM channel_members cm JOIN users u ON u.id = cm.user_id \
+         WHERE cm.channel_id = $1 ORDER BY COALESCE(u.display_name, u.username)",
     )
     .bind(channel_id)
     .fetch_all(&state.db)
@@ -357,6 +371,9 @@ pub async fn channel_members(
             .map(|r| MemberResp {
                 user_id: r.0,
                 username: r.1,
+                display_name: r.2,
+                role: r.3,
+                avatar_url: r.4,
             })
             .collect(),
     ))
@@ -371,10 +388,11 @@ pub async fn channel_history(
     let limit = params.limit.unwrap_or(50).min(200);
     let before = params.before.unwrap_or_else(|| Utc::now() + chrono::Duration::days(1));
 
-    // HIPAA: Fetch with encrypted content support
-    let rows = sqlx::query_as::<_, (Uuid, Uuid, Uuid, String, String, Option<String>, Option<String>, Option<bool>, DateTime<Utc>)>(
+    // HIPAA: Fetch with encrypted content support + user profile data
+    let rows = sqlx::query_as::<_, (Uuid, Uuid, Uuid, String, String, Option<String>, Option<String>, Option<bool>, DateTime<Utc>, Option<String>, Option<String>, Option<String>)>(
         "SELECT m.id, m.channel_id, m.user_id, u.username, m.content, \
-         m.content_encrypted, m.content_nonce, m.encrypted, m.created_at \
+         m.content_encrypted, m.content_nonce, m.encrypted, m.created_at, \
+         u.display_name, u.role, u.avatar_url \
          FROM messages m JOIN users u ON u.id = m.user_id \
          WHERE m.channel_id = $1 AND m.created_at < $2 \
          ORDER BY m.created_at DESC LIMIT $3",
@@ -407,6 +425,9 @@ pub async fn channel_history(
                 channel_id: r.1,
                 user_id: r.2,
                 username: r.3,
+                display_name: r.9,
+                role: r.10,
+                avatar_url: r.11,
                 content,
                 created_at: r.8,
             }

@@ -7,6 +7,7 @@ pub mod crypto;
 pub mod error;
 pub mod invites;
 pub mod mfa;
+pub mod profile;
 pub mod push;
 pub mod retention;
 pub mod state;
@@ -226,6 +227,9 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         .route("/calls/force-end-all", post(calls::handlers::force_end_all_calls))
         .route("/devices", post(push::handlers::register_device))
         .route("/devices", axum::routing::delete(push::handlers::unregister_device))
+        .route("/profile", get(profile::get_profile))
+        .route("/profile", axum::routing::put(profile::update_profile))
+        .route("/avatar", post(profile::upload_avatar))
         .route("/online", get(online_users))
         .route("/turn-credentials", get(turn_credentials))
         .route("/health", get(health));

@@ -31,6 +31,9 @@ export default function MessageItem({ message, isOwn, isCompact }: MessageItemPr
     );
   }
 
+  const displayName = message.display_name || message.username;
+  const avatarUrl = message.avatar_url;
+
   if (isCompact) {
     return (
       <div className={`msg compact ${isOwn ? 'own' : ''}`}>
@@ -46,15 +49,16 @@ export default function MessageItem({ message, isOwn, isCompact }: MessageItemPr
 
   return (
     <div className={`msg ${isOwn ? 'own' : ''}`}>
-      <div
-        className="msg-avatar"
-        style={{ background: avatarColor(message.username) }}
-      >
-        {avatarInitial(message.username)}
+      <div className="msg-avatar" style={avatarUrl ? undefined : { background: avatarColor(message.username) }}>
+        {avatarUrl
+          ? <img src={avatarUrl} alt={displayName} />
+          : avatarInitial(message.username)
+        }
       </div>
       <div className="msg-body">
         <div className="msg-header">
-          <span className="msg-user">{message.username}</span>
+          <span className="msg-user">{displayName}</span>
+          {message.role && <span className="msg-role">{message.role}</span>}
           <span className="msg-time">{timeStr}</span>
         </div>
         <div
@@ -73,7 +77,6 @@ function CallSystemMessage({ caller, meetingId, type, time }: { caller: string; 
   const call = activeCalls.get(meetingId);
   const isActive = !!call;
   const isInThisCall = currentMeetingId === meetingId;
-  const isMe = caller === state.username;
 
   return (
     <div className="call-system-msg">

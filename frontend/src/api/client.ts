@@ -119,6 +119,27 @@ export const api = {
   validateMfa: (userId: string, code: string) =>
     request('/mfa/validate', { method: 'POST', body: JSON.stringify({ user_id: userId, code }) }),
 
+  // Profile
+  getProfile: () => request<{ display_name: string | null; role: string | null; avatar_url: string | null; theme: string; onboarded: boolean }>('/profile'),
+  updateProfile: (data: { display_name?: string; role?: string; theme?: string }) =>
+    request('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return fetch(`${BASE}/avatar`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { ...authHeaders() },
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(body.error || 'Upload failed');
+      }
+      return res.json() as Promise<{ avatar_url: string }>;
+    });
+  },
+
   // Logout (HIPAA C3)
   logout: () => request('/auth/logout', { method: 'POST' }).catch(() => {}),
 };

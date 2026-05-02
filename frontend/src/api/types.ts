@@ -28,6 +28,9 @@ export interface MessageData {
   channel_id: string;
   user_id: string;
   username: string;
+  display_name?: string;
+  role?: string;
+  avatar_url?: string;
   content: string;
   timestamp: string;
   created_at?: string;
@@ -179,6 +182,13 @@ export interface WsError {
   message: string;
 }
 
+export interface WsTyping {
+  type: 'typing';
+  channel_id: string;
+  user_id: string;
+  username: string;
+}
+
 export interface WsPong {
   type: 'pong';
 }
@@ -196,6 +206,7 @@ export type WsServerMsg =
   | WsCallMediaEvent
   | WsCallSpeaking
   | WsCallNetworkQuality
+  | WsTyping
   | WsRtcSignal
   | WsError
   | WsPong;
