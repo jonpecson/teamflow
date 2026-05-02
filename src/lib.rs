@@ -201,6 +201,7 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         .route("/auth/login", post(auth::handlers::login))
         .route("/auth/logout", post(auth_logout))
         // HIPAA: MFA endpoints
+        .route("/mfa/status", get(mfa::handlers::mfa_status))
         .route("/mfa/setup", post(mfa::handlers::setup_mfa))
         .route("/mfa/verify", post(mfa::handlers::verify_mfa))
         .route("/mfa/validate", post(mfa::handlers::validate_mfa))

@@ -112,6 +112,7 @@ export const api = {
   turnCredentials: () => request('/turn-credentials'),
 
   // MFA (HIPAA H2)
+  mfaStatus: () => request<{ enabled: boolean }>('/mfa/status'),
   setupMfa: () => request('/mfa/setup', { method: 'POST' }),
   verifyMfa: (code: string) =>
     request('/mfa/verify', { method: 'POST', body: JSON.stringify({ code }) }),

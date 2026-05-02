@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { api } from '../../api/client';
 import { avatarColor, avatarInitial } from '../../utils/colors';
 import MfaSetup from './MfaSetup';
 
@@ -11,9 +12,14 @@ interface Props {
 export default function SettingsModal({ onClose, onShowInviteCode }: Props) {
   const { username, logout } = useAuth();
   const [showMfaSetup, setShowMfaSetup] = useState(false);
+  const [mfaEnabled, setMfaEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api.mfaStatus().then((r) => setMfaEnabled(r.enabled)).catch(() => {});
+  }, []);
 
   if (showMfaSetup) {
-    return <MfaSetup onClose={() => setShowMfaSetup(false)} />;
+    return <MfaSetup onClose={() => { setShowMfaSetup(false); setMfaEnabled(true); }} />;
   }
 
   return (
@@ -41,20 +47,26 @@ export default function SettingsModal({ onClose, onShowInviteCode }: Props) {
         <div className="settings-section">
           <div className="settings-section-title">Security</div>
 
-          <button className="settings-item" onClick={() => setShowMfaSetup(true)}>
+          <button className="settings-item" onClick={() => !mfaEnabled && setShowMfaSetup(true)} style={mfaEnabled ? { cursor: 'default' } : undefined}>
             <div className="settings-item-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={mfaEnabled ? 'var(--success, #34d399)' : 'currentColor'} strokeWidth="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
             <div className="settings-item-content">
               <div className="settings-item-label">Two-Factor Authentication</div>
-              <div className="settings-item-desc">Add an extra layer of security with TOTP</div>
+              <div className="settings-item-desc">
+                {mfaEnabled === null ? 'Checking...' : mfaEnabled ? 'Enabled — your account is protected' : 'Add an extra layer of security with TOTP'}
+              </div>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.3 }}>
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
+            {mfaEnabled ? (
+              <span style={{ fontSize: 11, color: 'var(--success, #34d399)', fontWeight: 600, whiteSpace: 'nowrap' }}>Active</span>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.3 }}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            )}
           </button>
         </div>
 

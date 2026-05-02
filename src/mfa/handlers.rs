@@ -18,6 +18,26 @@ pub struct MfaVerifyReq {
     pub code: String,
 }
 
+/// Check MFA status for the current user
+pub async fn mfa_status(
+    State(state): State<AppState>,
+    claims: Claims,
+) -> Result<Json<MfaStatusResp>, AppError> {
+    let (mfa_enabled,): (bool,) = sqlx::query_as(
+        "SELECT mfa_enabled FROM users WHERE id = $1",
+    )
+    .bind(claims.sub)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(MfaStatusResp { enabled: mfa_enabled }))
+}
+
+#[derive(Serialize)]
+pub struct MfaStatusResp {
+    pub enabled: bool,
+}
+
 /// Setup MFA: generate TOTP secret and return QR URI
 pub async fn setup_mfa(
     State(state): State<AppState>,
