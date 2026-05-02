@@ -7,6 +7,11 @@ interface LoginResponse {
   user_id?: string;
   username?: string;
   mfa_required?: boolean;
+  display_name?: string | null;
+  role?: string | null;
+  avatar_url?: string | null;
+  theme?: string;
+  onboarded?: boolean;
 }
 
 export function useAuth() {
@@ -23,7 +28,9 @@ export function useAuth() {
 
     // Normal login
     if (data.token && data.user_id && data.username) {
-      dispatch({ type: 'LOGIN', token: data.token, userId: data.user_id, username: data.username });
+      dispatch({ type: 'LOGIN', token: data.token, userId: data.user_id, username: data.username,
+        displayName: data.display_name, role: data.role, avatarUrl: data.avatar_url,
+        theme: data.theme, onboarded: data.onboarded });
     }
     return data;
   }, [dispatch]);
@@ -31,14 +38,18 @@ export function useAuth() {
   const validateMfa = useCallback(async (userId: string, code: string) => {
     const data = await api.validateMfa(userId, code) as LoginResponse;
     if (data.token && data.user_id && data.username) {
-      dispatch({ type: 'LOGIN', token: data.token, userId: data.user_id, username: data.username });
+      dispatch({ type: 'LOGIN', token: data.token, userId: data.user_id, username: data.username,
+        displayName: data.display_name, role: data.role, avatarUrl: data.avatar_url,
+        theme: data.theme, onboarded: data.onboarded });
     }
   }, [dispatch]);
 
   const register = useCallback(async (username: string, password: string, inviteCode?: string) => {
     const data = await api.register(username, password, inviteCode) as LoginResponse;
     if (data.token && data.user_id && data.username) {
-      dispatch({ type: 'LOGIN', token: data.token, userId: data.user_id, username: data.username });
+      dispatch({ type: 'LOGIN', token: data.token, userId: data.user_id, username: data.username,
+        displayName: data.display_name, role: data.role, avatarUrl: data.avatar_url,
+        theme: data.theme, onboarded: data.onboarded });
     }
   }, [dispatch]);
 

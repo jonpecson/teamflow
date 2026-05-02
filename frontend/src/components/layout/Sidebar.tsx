@@ -156,12 +156,15 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
       {/* Footer */}
       <div className="sidebar-footer">
         <div className="sidebar-user" onClick={() => setShowSettings(true)}>
-          <div className="sidebar-user-avatar" style={{ background: avatarColor(username || '') }}>
-            {avatarInitial(username || '')}
+          <div className="sidebar-user-avatar" style={state.avatarUrl ? undefined : { background: avatarColor(username || '') }}>
+            {state.avatarUrl
+              ? <img src={state.avatarUrl} alt={state.displayName || username || ''} />
+              : avatarInitial(username || '')
+            }
             <span className="sidebar-user-status" />
           </div>
           <div className="sidebar-user-info">
-            <span className="sidebar-user-name">{username}</span>
+            <span className="sidebar-user-name">{state.displayName || username}</span>
             <span className="sidebar-user-label">Online</span>
           </div>
         </div>

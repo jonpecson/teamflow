@@ -15,7 +15,8 @@ import { useChannels } from '../../hooks/useChannels';
 import { usePresence } from '../../hooks/usePresence';
 import { useCalls } from '../../hooks/useCalls';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { useAppState } from '../../context/AppContext';
+import { useAppState, useAppDispatch } from '../../context/AppContext';
+import OnboardingModal from '../settings/OnboardingModal';
 import type { MessageData } from '../../api/types';
 
 export default function AppLayout() {
@@ -24,6 +25,7 @@ export default function AppLayout() {
   const { loadActiveCalls, currentMeetingId, activeCalls } = useCalls();
   const { send, setRtcSignalHandler } = useWebSocket();
   const state = useAppState();
+  const dispatch = useAppDispatch();
 
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -137,6 +139,12 @@ export default function AppLayout() {
       {showCreateChannel && <CreateChannelModal onClose={() => setShowCreateChannel(false)} />}
       {showInvite && currentChannelId && <InviteModal channelId={currentChannelId} onClose={() => setShowInvite(false)} />}
       {showInviteCode && <InviteCodeModal onClose={() => setShowInviteCode(false)} />}
+      {!!state.token && !state.onboarded && (
+        <OnboardingModal
+          username={state.username || ''}
+          onComplete={() => dispatch({ type: 'SET_PROFILE', onboarded: true })}
+        />
+      )}
     </div>
   );
 }

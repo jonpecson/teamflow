@@ -7,6 +7,13 @@ export interface AppState {
   userId: string | null;
   username: string | null;
 
+  // Profile
+  displayName: string | null;
+  role: string | null;
+  avatarUrl: string | null;
+  theme: string;
+  onboarded: boolean;
+
   // Channels
   channels: Channel[];
   dmChannels: Channel[];
@@ -35,8 +42,9 @@ export interface AppState {
 }
 
 export type AppAction =
-  | { type: 'LOGIN'; token: string; userId: string; username: string }
+  | { type: 'LOGIN'; token: string; userId: string; username: string; displayName?: string | null; role?: string | null; avatarUrl?: string | null; theme?: string; onboarded?: boolean }
   | { type: 'LOGOUT' }
+  | { type: 'SET_PROFILE'; displayName?: string | null; role?: string | null; avatarUrl?: string | null; theme?: string; onboarded?: boolean }
   | { type: 'SET_CHANNELS'; channels: Channel[]; dmChannels: Channel[] }
   | { type: 'SET_MY_CHANNEL_IDS'; ids: string[] }
   | { type: 'ADD_CHANNEL'; channel: Channel }
@@ -70,6 +78,11 @@ const initialState: AppState = {
   token: localStorage.getItem('token'),
   userId: localStorage.getItem('userId'),
   username: localStorage.getItem('username'),
+  displayName: localStorage.getItem('displayName'),
+  role: localStorage.getItem('role'),
+  avatarUrl: localStorage.getItem('avatarUrl'),
+  theme: localStorage.getItem('tf-theme') || 'system',
+  onboarded: localStorage.getItem('onboarded') === 'true',
   channels: [],
   dmChannels: [],
   myChannelIds: new Set(),
@@ -92,13 +105,43 @@ function appReducer(state: AppState, action: AppAction): AppState {
       localStorage.setItem('token', action.token);
       localStorage.setItem('userId', action.userId);
       localStorage.setItem('username', action.username);
-      return { ...state, token: action.token, userId: action.userId, username: action.username };
+      if (action.displayName) localStorage.setItem('displayName', action.displayName);
+      if (action.role) localStorage.setItem('role', action.role);
+      if (action.avatarUrl) localStorage.setItem('avatarUrl', action.avatarUrl);
+      if (action.onboarded !== undefined) localStorage.setItem('onboarded', String(action.onboarded));
+      return {
+        ...state,
+        token: action.token, userId: action.userId, username: action.username,
+        displayName: action.displayName ?? state.displayName,
+        role: action.role ?? state.role,
+        avatarUrl: action.avatarUrl ?? state.avatarUrl,
+        theme: action.theme ?? state.theme,
+        onboarded: action.onboarded ?? state.onboarded,
+      };
     }
     case 'LOGOUT': {
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
       localStorage.removeItem('username');
-      return { ...initialState, token: null, userId: null, username: null };
+      localStorage.removeItem('displayName');
+      localStorage.removeItem('role');
+      localStorage.removeItem('avatarUrl');
+      localStorage.removeItem('onboarded');
+      return { ...initialState, token: null, userId: null, username: null, displayName: null, role: null, avatarUrl: null, theme: 'system', onboarded: false };
+    }
+    case 'SET_PROFILE': {
+      if (action.displayName !== undefined) localStorage.setItem('displayName', action.displayName || '');
+      if (action.role !== undefined) localStorage.setItem('role', action.role || '');
+      if (action.avatarUrl !== undefined) localStorage.setItem('avatarUrl', action.avatarUrl || '');
+      if (action.onboarded !== undefined) localStorage.setItem('onboarded', String(action.onboarded));
+      return {
+        ...state,
+        displayName: action.displayName !== undefined ? action.displayName ?? null : state.displayName,
+        role: action.role !== undefined ? action.role ?? null : state.role,
+        avatarUrl: action.avatarUrl !== undefined ? action.avatarUrl ?? null : state.avatarUrl,
+        theme: action.theme ?? state.theme,
+        onboarded: action.onboarded ?? state.onboarded,
+      };
     }
     case 'SET_CHANNELS':
       return { ...state, channels: action.channels, dmChannels: action.dmChannels };
