@@ -145,6 +145,8 @@ export const api = {
     });
   },
   listBookmarks: () => request('/bookmarks'),
+  listThreads: () => request('/threads'),
+  listMentions: () => request('/mentions'),
 
   // Profile
   getProfile: () => request<{ display_name: string | null; role: string | null; avatar_url: string | null; theme: string; onboarded: boolean }>('/profile'),

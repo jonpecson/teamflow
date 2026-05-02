@@ -241,6 +241,8 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         .route("/messages/{id}/replies", get(messages::thread_replies))
         .route("/messages/{id}", axum::routing::delete(messages::delete_message))
         .route("/bookmarks", get(bookmarks::list_bookmarks))
+        .route("/threads", get(messages::my_threads))
+        .route("/mentions", get(messages::my_mentions))
         .route("/online", get(online_users))
         .route("/turn-credentials", get(turn_credentials))
         .route("/health", get(health));

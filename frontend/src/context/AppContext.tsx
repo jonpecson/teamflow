@@ -39,6 +39,9 @@ export interface AppState {
 
   // Typing
   typingUsers: Map<string, Map<string, number>>; // channelId -> Map<username, timestamp>
+
+  // View mode
+  sidebarView: 'threads' | 'dms' | 'mentions' | 'saved' | null;
 }
 
 export type AppAction =
@@ -72,7 +75,8 @@ export type AppAction =
   | { type: 'CLEAR_TYPING'; channelId: string; username: string }
   | { type: 'UPDATE_REACTION'; channelId: string; messageId: string; emoji: string; username: string; added: boolean }
   | { type: 'DELETE_MESSAGE'; channelId: string; messageId: string }
-  | { type: 'ADD_THREAD_REPLY'; channelId: string; parentId: string };
+  | { type: 'ADD_THREAD_REPLY'; channelId: string; parentId: string }
+  | { type: 'SET_SIDEBAR_VIEW'; view: AppState['sidebarView'] };
 
 const initialState: AppState = {
   token: localStorage.getItem('token'),
@@ -97,6 +101,7 @@ const initialState: AppState = {
   callStartTime: null,
   unreadCounts: new Map(),
   typingUsers: new Map(),
+  sidebarView: null,
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -166,7 +171,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, myChannelIds: ids };
     }
     case 'SELECT_CHANNEL':
-      return { ...state, currentChannelId: action.channelId };
+      return { ...state, currentChannelId: action.channelId, sidebarView: null };
     case 'SET_MESSAGES': {
       const msgs = new Map(state.messages);
       msgs.set(action.channelId, action.messages);
@@ -307,6 +312,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       msgs.set(action.channelId, updated);
       return { ...state, messages: msgs };
     }
+    case 'SET_SIDEBAR_VIEW':
+      return { ...state, sidebarView: action.view, currentChannelId: action.view ? null : state.currentChannelId };
     default:
       return state;
   }

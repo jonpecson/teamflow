@@ -1596,6 +1596,36 @@ a:hover { text-decoration: underline; }
   text-align: center;
 }
 
+/* ─── Sidebar View Items (Threads, Mentions, Saved) ─── */
+.sidebar-view-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  width: 100%; padding: 12px 20px;
+  text-align: left; font: inherit;
+  color: var(--text-primary);
+  border: none; background: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.sidebar-view-item:hover { background: var(--bg-hover); }
+.sidebar-view-item-avatar {
+  width: 32px; height: 32px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px; color: #fff;
+  flex-shrink: 0; overflow: hidden; margin-top: 2px;
+}
+.sidebar-view-item-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sidebar-view-item-body { flex: 1; min-width: 0; }
+.sidebar-view-item-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.sidebar-view-item-name { font-weight: 600; font-size: 14px; }
+.sidebar-view-item-channel { font-size: 12px; color: var(--text-muted); }
+.sidebar-view-item-text {
+  font-size: 13px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.4;
+}
+.sidebar-view-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
 .msg-text strong { font-weight: 700; }
 .msg-text em { font-style: italic; }
 .msg-text del { text-decoration: line-through; color: var(--text-muted); }

@@ -17,6 +17,7 @@ import { useCalls } from '../../hooks/useCalls';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
 import OnboardingModal from '../settings/OnboardingModal';
+import SidebarViewPanel from './SidebarViewPanel';
 import type { MessageData } from '../../api/types';
 
 export default function AppLayout() {
@@ -98,39 +99,45 @@ export default function AppLayout() {
         onChannelSelect={() => setSidebarOpen(false)}
       />
       <main className="main" onClick={() => sidebarOpen && setSidebarOpen(false)}>
-        {!isInCallOnCurrentChannel && (
-          <ChatHeader
-            onShowInvite={() => setShowInvite(true)}
-            onToggleDetail={() => setShowDetail(!showDetail)}
-            showingDetail={showDetail}
-          />
-        )}
-
-        {isInCallOnCurrentChannel ? (
-          <HuddleRoom send={send} setRtcSignalHandler={setRtcSignalHandler} />
+        {state.sidebarView ? (
+          <SidebarViewPanel view={state.sidebarView} onOpenThread={handleOpenThread} />
         ) : (
-          <div className="chat-body">
-            <div className="chat-content">
-              <MessageList onOpenThread={handleOpenThread} onQuoteReply={handleQuoteReply} />
-              {isMember && <MessageInput send={send} quotePrefix={quotePrefix} onClearQuote={() => setQuotePrefix('')} />}
-            </div>
-            {threadMessage && (
-              <ThreadPanel
-                parentMessage={threadMessage}
-                send={send}
-                onClose={() => setThreadMessage(null)}
+          <>
+            {!isInCallOnCurrentChannel && (
+              <ChatHeader
+                onShowInvite={() => setShowInvite(true)}
+                onToggleDetail={() => setShowDetail(!showDetail)}
+                showingDetail={showDetail}
               />
             )}
-            {showDetail && currentChannelId && currentChannel && !threadMessage && (
-              <ChannelDetailPanel
-                channelId={currentChannelId}
-                channelName={currentChannel.name}
-                isDm={currentChannel.is_dm}
-                onClose={() => setShowDetail(false)}
-                onInvite={() => setShowInvite(true)}
-              />
+
+            {isInCallOnCurrentChannel ? (
+              <HuddleRoom send={send} setRtcSignalHandler={setRtcSignalHandler} />
+            ) : (
+              <div className="chat-body">
+                <div className="chat-content">
+                  <MessageList onOpenThread={handleOpenThread} onQuoteReply={handleQuoteReply} />
+                  {isMember && <MessageInput send={send} quotePrefix={quotePrefix} onClearQuote={() => setQuotePrefix('')} />}
+                </div>
+                {threadMessage && (
+                  <ThreadPanel
+                    parentMessage={threadMessage}
+                    send={send}
+                    onClose={() => setThreadMessage(null)}
+                  />
+                )}
+                {showDetail && currentChannelId && currentChannel && !threadMessage && (
+                  <ChannelDetailPanel
+                    channelId={currentChannelId}
+                    channelName={currentChannel.name}
+                    isDm={currentChannel.is_dm}
+                    onClose={() => setShowDetail(false)}
+                    onInvite={() => setShowInvite(true)}
+                  />
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </main>
 
