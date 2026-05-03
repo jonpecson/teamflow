@@ -12,6 +12,7 @@ interface Props {
 export default function HuddleControls({ media, showChat, onToggleChat }: Props) {
   const { leaveCall, endCall, currentMeetingId, activeCalls } = useCalls();
   const [showDevices, setShowDevices] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   const currentCall = currentMeetingId ? activeCalls.get(currentMeetingId) : null;
   const isCreator = currentCall?.started_by === localStorage.getItem('username');
@@ -22,6 +23,7 @@ export default function HuddleControls({ media, showChat, onToggleChat }: Props)
     } else {
       await media.startScreenShare();
     }
+    setShowMore(false);
   };
 
   const handleLeave = () => {
@@ -37,6 +39,7 @@ export default function HuddleControls({ media, showChat, onToggleChat }: Props)
   return (
     <div className="huddle-controls-bar">
       <div className="huddle-controls-group">
+        {/* Always visible: Mic */}
         <button
           className={`huddle-ctrl-btn ${media.micEnabled ? 'active' : 'muted'}`}
           onClick={media.toggleMic}
@@ -46,28 +49,27 @@ export default function HuddleControls({ media, showChat, onToggleChat }: Props)
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
               <path d="M19 10v2a7 7 0 01-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
+              <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           ) : (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="1" y1="1" x2="23" y2="23"/>
               <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/>
               <path d="M17 16.95A7 7 0 015 12v-2m14 0v2c0 .76-.13 1.49-.35 2.17"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
+              <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           )}
         </button>
+
+        {/* Desktop only: Camera, Screen Share, Chat, Devices */}
         <button
-          className={`huddle-ctrl-btn ${media.cameraEnabled ? 'active' : ''}`}
+          className={`huddle-ctrl-btn desktop-only ${media.cameraEnabled ? 'active' : ''}`}
           onClick={media.toggleCamera}
           title={media.cameraEnabled ? 'Camera Off' : 'Camera On'}
         >
           {media.cameraEnabled ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="23 7 16 12 23 17 23 7"/>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
             </svg>
           ) : (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -77,18 +79,17 @@ export default function HuddleControls({ media, showChat, onToggleChat }: Props)
           )}
         </button>
         <button
-          className={`huddle-ctrl-btn ${media.screenSharing ? 'active' : ''}`}
+          className={`huddle-ctrl-btn desktop-only ${media.screenSharing ? 'active' : ''}`}
           onClick={handleScreenShare}
           title={media.screenSharing ? 'Stop Sharing' : 'Share Screen'}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
+            <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
         </button>
         <button
-          className={`huddle-ctrl-btn ${showChat ? 'active' : ''}`}
+          className={`huddle-ctrl-btn desktop-only ${showChat ? 'active' : ''}`}
           onClick={onToggleChat}
           title={showChat ? 'Hide Chat' : 'Show Chat'}
         >
@@ -97,7 +98,7 @@ export default function HuddleControls({ media, showChat, onToggleChat }: Props)
           </svg>
         </button>
         <button
-          className="huddle-ctrl-btn device-btn"
+          className="huddle-ctrl-btn desktop-only device-btn"
           onClick={() => setShowDevices(!showDevices)}
           title="Devices"
         >
@@ -107,6 +108,35 @@ export default function HuddleControls({ media, showChat, onToggleChat }: Props)
           </svg>
         </button>
         {showDevices && <DevicePicker onClose={() => setShowDevices(false)} />}
+
+        {/* Mobile only: More button */}
+        <div className="mobile-more-wrapper mobile-only">
+          <button
+            className={`huddle-ctrl-btn ${showMore ? 'active' : ''}`}
+            onClick={() => setShowMore(!showMore)}
+            title="More"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+            </svg>
+          </button>
+          {showMore && (
+            <div className="mobile-call-menu">
+              <button onClick={() => { media.toggleCamera(); setShowMore(false); }}>
+                {media.cameraEnabled ? '📷 Camera Off' : '📷 Camera On'}
+              </button>
+              <button onClick={handleScreenShare}>
+                {media.screenSharing ? '🖥 Stop Share' : '🖥 Share Screen'}
+              </button>
+              <button onClick={() => { onToggleChat(); setShowMore(false); }}>
+                💬 {showChat ? 'Hide Chat' : 'Show Chat'}
+              </button>
+              <button onClick={() => { setShowDevices(!showDevices); setShowMore(false); }}>
+                ⚙️ Devices
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="huddle-controls-group">
         <button className="huddle-ctrl-btn leave" onClick={handleLeave} title="Leave Huddle">

@@ -1036,6 +1036,29 @@ a:hover { text-decoration: underline; }
   font-weight: 600; font-size: 13px;
 }
 
+/* Mobile call more menu */
+.mobile-more-wrapper { position: relative; }
+.mobile-call-menu {
+  position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  min-width: 180px;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.3);
+  z-index: 20;
+}
+.mobile-call-menu button {
+  display: block; width: 100%;
+  padding: 10px 14px;
+  text-align: left; font-size: 14px;
+  color: var(--text-primary);
+  border-radius: 6px;
+  transition: background var(--transition);
+  border: none; background: none; cursor: pointer;
+}
+.mobile-call-menu button:hover { background: var(--bg-hover); }
+
 /* ─── Participant Grid ─── */
 .participant-grid {
   display: grid; gap: 8px; padding: 12px; height: 100%;
@@ -1284,12 +1307,16 @@ a:hover { text-decoration: underline; }
   .settings-modal { width: 100%; max-width: 100%; border-radius: 0; min-height: 100vh; }
 }
 
-/* ─── Mobile Menu Button (hidden on desktop) ─── */
+/* ─── Visibility helpers ─── */
 .mobile-menu-btn { display: none; }
+.mobile-only { display: none; }
+.desktop-only { display: flex; }
 
 /* ─── Mobile Responsive ─── */
 @media (max-width: 768px) {
   .mobile-menu-btn { display: flex; }
+  .mobile-only { display: flex; }
+  .desktop-only { display: none !important; }
 
   .app { flex-direction: column; }
   .sidebar {
