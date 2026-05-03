@@ -965,6 +965,15 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--border);
 }
 .huddle-chat-header h4 { font-size: 14px; font-weight: 700; }
+.huddle-chat-back {
+  display: none; /* shown only on mobile */
+  align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer;
+  color: var(--accent-light); font-size: 14px; font-weight: 600;
+  padding: 4px 8px; border-radius: 6px;
+  transition: background var(--transition);
+}
+.huddle-chat-back:hover { background: var(--bg-hover); }
 .huddle-chat-close {
   font-size: 22px; color: var(--text-muted);
   transition: color var(--transition); line-height: 1;
@@ -1388,6 +1397,8 @@ a:hover { text-decoration: underline; }
   .participant-grid.grid-1 { max-width: 100%; }
   .participant-grid.grid-2 { grid-template-columns: 1fr; }
   .huddle-chat-panel { width: 100%; min-width: 100%; }
+  .huddle-chat-back { display: flex; }
+  .huddle-chat-close { display: none; }
   .huddle-room-body { flex-direction: column; }
 
   /* Channel detail */
