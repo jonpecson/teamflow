@@ -116,7 +116,11 @@ export function useWebSocket() {
               timestamp: new Date().toISOString(),
             },
           });
-          SoundEngine.playTone(880, 0.15, 0.1);
+          // Don't play a sound here — IncomingCallBanner handles ringtone for DM calls
+          // For channel calls, play a subtle notification tone
+          if (!msg.channel_name.startsWith('dm-')) {
+            SoundEngine.playTone(880, 0.15, 0.1);
+          }
           notifyCallStarted(msg.started_by, msg.channel_name);
           break;
         }

@@ -43,15 +43,18 @@ export function notifyMessage(username: string, content: string, channelName: st
 }
 
 export function notifyCallStarted(caller: string, channelName: string) {
+  const isDm = channelName.startsWith('dm-');
   showNotification(
-    `${caller} started a call`,
-    `Huddle in #${channelName}`,
+    isDm ? `${caller} is calling you` : `${caller} started a huddle`,
+    isDm ? 'Direct message' : `#${channelName}`,
   );
 }
 
 export function notifyCallJoined(username: string, channelName: string) {
+  const isDm = channelName.startsWith('dm-');
+  if (isDm) return; // Don't notify join for 1:1 calls
   showNotification(
-    `${username} joined the call`,
+    `${username} joined the huddle`,
     `#${channelName}`,
   );
 }

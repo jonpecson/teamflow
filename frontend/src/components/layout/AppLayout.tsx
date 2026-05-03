@@ -18,7 +18,8 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
 import OnboardingModal from '../settings/OnboardingModal';
 import SidebarViewPanel from './SidebarViewPanel';
-import type { MessageData } from '../../api/types';
+import IncomingCallBanner from '../calls/IncomingCallBanner';
+import type { MessageData, ActiveCall } from '../../api/types';
 
 export default function AppLayout() {
   const { loadChannels, currentChannelId, myChannelIds, channels, dmChannels } = useChannels();
@@ -41,8 +42,10 @@ export default function AppLayout() {
     loadUsers();
     loadActiveCalls();
     requestNotificationPermission();
-    const pollInterval = setInterval(loadActiveCalls, 10000);
-    return () => clearInterval(pollInterval);
+    // Poll active calls every 10s and re-sync presence every 30s
+    const callPoll = setInterval(loadActiveCalls, 10000);
+    const presencePoll = setInterval(loadUsers, 30000);
+    return () => { clearInterval(callPoll); clearInterval(presencePoll); };
   }, [loadChannels, loadUsers, loadActiveCalls]);
 
   // Close panels when switching channels
@@ -78,6 +81,15 @@ export default function AppLayout() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [currentMeetingId]);
+
+  // Compute incoming calls — calls in my channels that I'm not in
+  const incomingCalls: ActiveCall[] = [];
+  for (const [, call] of activeCalls) {
+    if (call.meeting_id === currentMeetingId) continue; // already in this call
+    if (!myChannelIds.has(call.channel_id)) continue; // not my channel
+    if (call.started_by === state.username) continue; // I started it
+    incomingCalls.push(call);
+  }
 
   const isMember = currentChannelId ? myChannelIds.has(currentChannelId) : false;
   const isInCallOnCurrentChannel = currentMeetingId
@@ -146,6 +158,7 @@ export default function AppLayout() {
       </main>
 
       {showMiniWindow && <HuddleMiniWindow />}
+      <IncomingCallBanner calls={incomingCalls} />
 
       {showCreateChannel && <CreateChannelModal onClose={() => setShowCreateChannel(false)} />}
       {showInvite && currentChannelId && <InviteModal channelId={currentChannelId} onClose={() => setShowInvite(false)} />}
