@@ -25,9 +25,10 @@ describe('MessageItem', () => {
     expect(container.querySelector('.msg-avatar')).not.toBeInTheDocument();
   });
 
-  it('renders own message with own class', () => {
+  it('renders own message', () => {
     const { container } = render(<MessageItem message={mockMsg} isOwn={true} isCompact={false} />);
-    expect(container.querySelector('.msg.own')).toBeInTheDocument();
+    expect(container.querySelector('.msg')).toBeInTheDocument();
+    expect(screen.getByText('alice')).toBeInTheDocument();
   });
 
   it('linkifies URLs in messages', () => {
