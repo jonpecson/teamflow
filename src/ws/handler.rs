@@ -79,7 +79,9 @@ async fn handle_socket(socket: WebSocket, state: AppState, user_id: Uuid, userna
     state.connections.remove(&user_id);
     send_task.abort();
 
-    // Auto-leave any active calls when WebSocket disconnects
+    // Auto-leave calls on WS disconnect — with grace period for reconnection
+    // Don't remove participants immediately; let the cleanup worker handle it
+    // after the grace period expires. This prevents calls from ending during deployments.
     let meeting_ids: Vec<String> = state
         .calls
         .meetings
@@ -88,39 +90,65 @@ async fn handle_socket(socket: WebSocket, state: AppState, user_id: Uuid, userna
         .map(|e| e.key().clone())
         .collect();
 
-    for meeting_id in meeting_ids {
-        let (channel_id, is_empty) = {
-            let mut meeting = match state.calls.meetings.get_mut(&meeting_id) {
-                Some(m) => m,
-                None => continue,
-            };
-            meeting.participants.retain(|(uid, _)| *uid != user_id);
-            (meeting.channel_id, meeting.participants.is_empty())
-        };
+    if !meeting_ids.is_empty() {
+        let grace_secs = state.config.call_disconnect_grace_secs;
+        tracing::info!(
+            user_id = %user_id, username = %username,
+            calls = ?meeting_ids, grace_secs = grace_secs,
+            "WS disconnected during active call(s), grace period started"
+        );
 
-        tracing::info!(user_id = %user_id, meeting_id = %meeting_id, "Auto-leaving call on WS disconnect");
+        // Schedule delayed cleanup — if user reconnects within grace period,
+        // the cleanup worker will see they're back online and skip removal
+        let state_clone = state.clone();
+        let username_clone = username.to_string();
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_secs(grace_secs)).await;
 
-        // Broadcast participant left
-        broadcast_call_event(&state, channel_id, ServerMsg::CallParticipantLeft {
-            meeting_id: meeting_id.clone(),
-            channel_id,
-            username: username.to_string(),
-        })
-        .await;
-
-        // If no participants left, end the meeting immediately
-        if is_empty {
-            if let Some((_, dead)) = state.calls.meetings.remove(&meeting_id) {
-                state.calls.channel_meetings.remove(&dead.channel_id);
+            // Check if user reconnected
+            if state_clone.connections.contains_key(&user_id) {
+                tracing::info!(user_id = %user_id, "User reconnected within grace period, keeping in call(s)");
+                return;
             }
-            let _ = state.call_provider.delete_meeting(&meeting_id).await;
-            broadcast_call_event(&state, channel_id, ServerMsg::CallEnded {
-                meeting_id: meeting_id.clone(),
-                channel_id,
-            })
-            .await;
-            tracing::info!(meeting_id = %meeting_id, "Auto-ended empty call after last participant disconnected");
-        }
+
+            // User didn't reconnect — remove from calls
+            for meeting_id in meeting_ids {
+                let (channel_id, is_empty) = {
+                    let mut meeting = match state_clone.calls.meetings.get_mut(&meeting_id) {
+                        Some(m) => m,
+                        None => continue,
+                    };
+                    // Double-check user is still in the meeting
+                    if !meeting.participants.iter().any(|(uid, _)| *uid == user_id) {
+                        continue;
+                    }
+                    meeting.participants.retain(|(uid, _)| *uid != user_id);
+                    (meeting.channel_id, meeting.participants.is_empty())
+                };
+
+                tracing::info!(user_id = %user_id, meeting_id = %meeting_id, "Removing from call after grace period");
+
+                broadcast_call_event(&state_clone, channel_id, ServerMsg::CallParticipantLeft {
+                    meeting_id: meeting_id.clone(),
+                    channel_id,
+                    username: username_clone.to_string(),
+                })
+                .await;
+
+                if is_empty {
+                    if let Some((_, dead)) = state_clone.calls.meetings.remove(&meeting_id) {
+                        state_clone.calls.channel_meetings.remove(&dead.channel_id);
+                    }
+                    let _ = state_clone.call_provider.delete_meeting(&meeting_id).await;
+                    broadcast_call_event(&state_clone, channel_id, ServerMsg::CallEnded {
+                        meeting_id: meeting_id.clone(),
+                        channel_id,
+                    })
+                    .await;
+                    tracing::info!(meeting_id = %meeting_id, "Auto-ended empty call after grace period");
+                }
+            }
+        });
     }
 
     broadcast_presence(&state, user_id, &username, PresenceStatus::Offline).await;

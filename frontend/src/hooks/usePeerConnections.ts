@@ -139,8 +139,10 @@ export function usePeerConnections(
       const stream = localStreamRef.current;
 
       if (!stream) {
-        // Remove all tracks
+        // Remove all tracks except screen share senders
+        const screenSender = screenSendersRef.current.get(remoteUser);
         senders.forEach((s) => {
+          if (s === screenSender) return;
           if (s.track) pc.removeTrack(s);
         });
         return;
@@ -161,8 +163,10 @@ export function usePeerConnections(
         }
       }
 
-      // Remove tracks no longer in local stream
+      // Remove tracks no longer in local stream (but don't touch screen share senders)
+      const screenSender = screenSendersRef.current.get(remoteUser);
       for (const sender of senders) {
+        if (sender === screenSender) continue; // skip screen share sender
         if (sender.track && !localTracks.some((t) => t.kind === sender.track!.kind)) {
           pc.removeTrack(sender);
         }
