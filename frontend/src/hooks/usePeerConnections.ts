@@ -31,15 +31,19 @@ export function usePeerConnections(
   send: (msg: object) => void,
   meetingId: string | null,
   localStream: MediaStream | null,
+  screenStream?: MediaStream | null,
 ) {
   const peersRef = useRef<Map<string, PeerEntry>>(new Map());
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
   const meetingIdRef = useRef(meetingId);
   const sendRef = useRef(send);
   const localStreamRef = useRef(localStream);
+  const screenStreamRef = useRef(screenStream);
+  const screenSendersRef = useRef<Map<string, RTCRtpSender>>(new Map());
   meetingIdRef.current = meetingId;
   sendRef.current = send;
   localStreamRef.current = localStream;
+  screenStreamRef.current = screenStream;
 
   const updateStreams = useCallback(() => {
     const map = new Map<string, MediaStream>();
@@ -165,6 +169,37 @@ export function usePeerConnections(
       }
     });
   }, [localStream]);
+
+  // When screenStream changes, add or remove screen track on all peers
+  useEffect(() => {
+    peersRef.current.forEach((entry, remoteUser) => {
+      const pc = entry.pc;
+      if (pc.connectionState === 'closed') return;
+
+      const existingSender = screenSendersRef.current.get(remoteUser);
+
+      if (screenStream) {
+        const screenTrack = screenStream.getVideoTracks()[0];
+        if (!screenTrack) return;
+
+        if (existingSender) {
+          // Replace existing screen track
+          console.log(`[WebRTC] Replacing screen track for ${remoteUser}`);
+          existingSender.replaceTrack(screenTrack);
+        } else {
+          // Add new screen track
+          console.log(`[WebRTC] Adding screen track for ${remoteUser}`);
+          const sender = pc.addTrack(screenTrack, screenStream);
+          screenSendersRef.current.set(remoteUser, sender);
+        }
+      } else if (existingSender) {
+        // Remove screen track
+        console.log(`[WebRTC] Removing screen track for ${remoteUser}`);
+        try { pc.removeTrack(existingSender); } catch { /* ignore */ }
+        screenSendersRef.current.delete(remoteUser);
+      }
+    });
+  }, [screenStream]);
 
   const handleSignal = useCallback(async (fromUser: string, signalType: string, data: unknown) => {
     let entry = peersRef.current.get(fromUser);

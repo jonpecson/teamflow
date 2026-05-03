@@ -19,9 +19,20 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
   const state = useAppState();
   const [timer, setTimer] = useState('00:00');
   const [showChat, setShowChat] = useState(false);
+  const [remoteSharer, setRemoteSharer] = useState<string | null>(null);
 
   const currentCall = currentMeetingId ? activeCalls.get(currentMeetingId) : null;
-  const { remoteStreams, createPeer, removePeer, handleSignal } = usePeerConnections(send, currentMeetingId, media.localStream);
+  const { remoteStreams, createPeer, removePeer, handleSignal } = usePeerConnections(send, currentMeetingId, media.localStream, media.screenStream);
+
+  // Broadcast screen share state to other participants via WS
+  useEffect(() => {
+    if (!currentMeetingId || !currentCall) return;
+    if (media.screenSharing) {
+      send({ type: 'call_screen_share_on', meeting_id: currentMeetingId });
+    } else {
+      send({ type: 'call_screen_share_off', meeting_id: currentMeetingId });
+    }
+  }, [media.screenSharing, currentMeetingId]);
 
   // Register RTC signal handler
   useEffect(() => {
@@ -58,6 +69,19 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
     return () => clearInterval(interval);
   }, [callStartTime]);
 
+  // Detect remote screen sharing — remote user with 2+ video tracks
+  const remoteScreenSharer = (() => {
+    for (const [username, stream] of remoteStreams) {
+      const videoTracks = stream.getVideoTracks();
+      if (videoTracks.length >= 2) {
+        // Create a stream with just the screen track (the second video track)
+        const screenTrack = videoTracks[videoTracks.length - 1];
+        return { username, stream: new MediaStream([screenTrack]) };
+      }
+    }
+    return null;
+  })();
+
   if (!currentCall) return null;
 
   return (
@@ -79,6 +103,17 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
               currentUser={state.username || ''}
               onStopShare={media.stopScreenShare}
               screenStream={media.screenStream}
+              localStream={media.localStream}
+              cameraEnabled={media.cameraEnabled}
+              remoteStreams={remoteStreams}
+            />
+          ) : remoteScreenSharer ? (
+            <ScreenShareView
+              sharer={remoteScreenSharer.username}
+              participants={currentCall.participants}
+              currentUser={state.username || ''}
+              onStopShare={() => {}}
+              screenStream={remoteScreenSharer.stream}
               localStream={media.localStream}
               cameraEnabled={media.cameraEnabled}
               remoteStreams={remoteStreams}
