@@ -6,22 +6,30 @@ export interface LocalMediaState {
   micEnabled: boolean;
   cameraEnabled: boolean;
   screenSharing: boolean;
+  selectedMicId: string | null;
+  selectedCameraId: string | null;
+  selectedSpeakerId: string | null;
 }
 
 export function useLocalMedia() {
   const [micEnabled, setMicEnabled] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
+  const [selectedMicId, setSelectedMicId] = useState<string | null>(null);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
-  const startMic = useCallback(async () => {
+  const startMic = useCallback(async (deviceId?: string | null) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints: MediaStreamConstraints = {
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (localStreamRef.current) {
-        // Add audio track to existing stream
         stream.getAudioTracks().forEach((t) => localStreamRef.current!.addTrack(t));
       } else {
         localStreamRef.current = stream;
@@ -47,13 +55,41 @@ export function useLocalMedia() {
     if (micEnabled) {
       stopMic();
     } else {
-      startMic();
+      startMic(selectedMicId);
     }
-  }, [micEnabled, startMic, stopMic]);
+  }, [micEnabled, startMic, stopMic, selectedMicId]);
 
-  const startCamera = useCallback(async () => {
+  const switchMic = useCallback(async (deviceId: string) => {
+    setSelectedMicId(deviceId);
+    if (micEnabled) {
+      // Stop current audio tracks
+      if (localStreamRef.current) {
+        localStreamRef.current.getAudioTracks().forEach((t) => {
+          t.stop();
+          localStreamRef.current!.removeTrack(t);
+        });
+      }
+      // Start with new device
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId } } });
+        if (localStreamRef.current) {
+          stream.getAudioTracks().forEach((t) => localStreamRef.current!.addTrack(t));
+        } else {
+          localStreamRef.current = stream;
+        }
+        setLocalStream(new MediaStream(localStreamRef.current!.getTracks()));
+      } catch (err) {
+        console.error('Mic switch failed:', err);
+      }
+    }
+  }, [micEnabled]);
+
+  const startCamera = useCallback(async (deviceId?: string | null) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const constraints: MediaStreamConstraints = {
+        video: deviceId ? { deviceId: { exact: deviceId } } : true,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (localStreamRef.current) {
         stream.getVideoTracks().forEach((t) => localStreamRef.current!.addTrack(t));
       } else {
@@ -64,6 +100,33 @@ export function useLocalMedia() {
     } catch (err) {
       console.error('Camera access denied:', err);
     }
+  }, []);
+
+  const switchCamera = useCallback(async (deviceId: string) => {
+    setSelectedCameraId(deviceId);
+    if (cameraEnabled) {
+      if (localStreamRef.current) {
+        localStreamRef.current.getVideoTracks().forEach((t) => {
+          t.stop();
+          localStreamRef.current!.removeTrack(t);
+        });
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } });
+        if (localStreamRef.current) {
+          stream.getVideoTracks().forEach((t) => localStreamRef.current!.addTrack(t));
+        } else {
+          localStreamRef.current = stream;
+        }
+        setLocalStream(new MediaStream(localStreamRef.current!.getTracks()));
+      } catch (err) {
+        console.error('Camera switch failed:', err);
+      }
+    }
+  }, [cameraEnabled]);
+
+  const switchSpeaker = useCallback((deviceId: string) => {
+    setSelectedSpeakerId(deviceId);
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -81,9 +144,9 @@ export function useLocalMedia() {
     if (cameraEnabled) {
       stopCamera();
     } else {
-      startCamera();
+      startCamera(selectedCameraId);
     }
-  }, [cameraEnabled, startCamera, stopCamera]);
+  }, [cameraEnabled, startCamera, stopCamera, selectedCameraId]);
 
   const startScreenShare = useCallback(async (): Promise<boolean> => {
     try {
@@ -142,11 +205,17 @@ export function useLocalMedia() {
     micEnabled,
     cameraEnabled,
     screenSharing,
+    selectedMicId,
+    selectedCameraId,
+    selectedSpeakerId,
     toggleMic,
     toggleCamera,
     startScreenShare,
     stopScreenShare,
     startMic,
     stopAll,
+    switchMic,
+    switchCamera,
+    switchSpeaker,
   };
 }

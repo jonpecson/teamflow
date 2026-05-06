@@ -19,6 +19,7 @@ pub enum ClientMsg {
     CallSpeaking { meeting_id: String, speaking: bool },
     CallNetworkQuality { meeting_id: String, quality: u8 },
     CallDecline { meeting_id: String },
+    CallReaction { meeting_id: String, emoji: String },
     // Thread reply
     ThreadReply { channel_id: Uuid, parent_id: Uuid, content: String },
     // Typing indicator
@@ -140,6 +141,12 @@ pub enum ServerMsg {
         meeting_id: String,
         channel_id: Uuid,
         username: String,
+    },
+    CallReaction {
+        meeting_id: String,
+        channel_id: Uuid,
+        username: String,
+        emoji: String,
     },
     // Typing indicator
     Typing {

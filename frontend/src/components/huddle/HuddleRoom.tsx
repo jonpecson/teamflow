@@ -1,30 +1,58 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCalls } from '../../hooks/useCalls';
-import { useLocalMedia } from '../../hooks/useLocalMedia';
+import type { useLocalMedia } from '../../hooks/useLocalMedia';
 import { usePeerConnections } from '../../hooks/usePeerConnections';
 import { useAppState } from '../../context/AppContext';
+import { useAudioLevels } from '../../hooks/useAudioLevels';
 import ParticipantGrid from './ParticipantGrid';
 import HuddleControls from './HuddleControls';
 import HuddleChatPanel from './HuddleChatPanel';
 import ScreenShareView from './ScreenShareView';
+import FloatingReaction from './FloatingReaction';
 
 interface Props {
   send: (msg: object) => void;
   setRtcSignalHandler: (handler: ((fromUser: string, signalType: string, data: unknown) => void) | null) => void;
+  setCallReactionHandler: (handler: ((username: string, emoji: string) => void) | null) => void;
+  media: ReturnType<typeof useLocalMedia>;
 }
 
-export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
+interface Reaction {
+  id: string;
+  emoji: string;
+  username: string;
+}
+
+export default function HuddleRoom({ send, setRtcSignalHandler, setCallReactionHandler, media }: Props) {
   const { currentMeetingId, activeCalls, callStartTime } = useCalls();
-  const media = useLocalMedia();
   const state = useAppState();
   const [timer, setTimer] = useState('00:00');
   const [showChat, setShowChat] = useState(false);
-  const [remoteSharer, setRemoteSharer] = useState<string | null>(null);
+  const [mouseActivity, setMouseActivity] = useState(0);
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const reactionIdRef = useRef(0);
 
   const currentCall = currentMeetingId ? activeCalls.get(currentMeetingId) : null;
   const { remoteStreams, createPeer, removePeer, handleSignal } = usePeerConnections(send, currentMeetingId, media.localStream, media.screenStream);
 
-  // Broadcast screen share state to other participants via WS
+  // Audio levels
+  const { speakingUsers, dominantSpeaker } = useAudioLevels(remoteStreams, media.localStream, state.username || '');
+
+  // Reaction handler
+  const handleReaction = useCallback((username: string, emoji: string) => {
+    const id = `r-${++reactionIdRef.current}`;
+    setReactions((prev) => [...prev, { id, emoji, username }]);
+    setTimeout(() => {
+      setReactions((prev) => prev.filter((r) => r.id !== id));
+    }, 2000);
+  }, []);
+
+  useEffect(() => {
+    setCallReactionHandler(handleReaction);
+    return () => setCallReactionHandler(null);
+  }, [handleReaction, setCallReactionHandler]);
+
+  // Broadcast screen share state
   useEffect(() => {
     if (!currentMeetingId || !currentCall) return;
     if (media.screenSharing) {
@@ -40,26 +68,23 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
     return () => setRtcSignalHandler(null);
   }, [handleSignal, setRtcSignalHandler]);
 
-  // Auto-start mic on mount (voice-first huddle)
+  // Auto-start mic on mount
   useEffect(() => {
     media.startMic();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When participants change, create peer connections.
-  // Use alphabetical order to determine roles: lower name = polite, higher = impolite (initiator).
-  // This ensures exactly one side initiates, avoiding offer collisions.
+  // Peer connections
   useEffect(() => {
     if (!currentCall || !state.username) return;
     currentCall.participants.forEach((p) => {
       if (p !== state.username) {
-        // The user with the alphabetically "higher" name initiates
         const weInitiate = state.username! > p;
-        createPeer(p, !weInitiate); // polite = we don't initiate
+        createPeer(p, !weInitiate);
       }
     });
   }, [currentCall?.participants.join(','), state.username, createPeer]);
 
+  // Timer
   useEffect(() => {
     if (!callStartTime) return;
     const interval = setInterval(() => {
@@ -69,12 +94,11 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
     return () => clearInterval(interval);
   }, [callStartTime]);
 
-  // Detect remote screen sharing — remote user with 2+ video tracks
+  // Remote screen sharer
   const remoteScreenSharer = (() => {
     for (const [username, stream] of remoteStreams) {
       const videoTracks = stream.getVideoTracks();
       if (videoTracks.length >= 2) {
-        // Create a stream with just the screen track (the second video track)
         const screenTrack = videoTracks[videoTracks.length - 1];
         return { username, stream: new MediaStream([screenTrack]) };
       }
@@ -85,7 +109,10 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
   if (!currentCall) return null;
 
   return (
-    <div className={`huddle-room ${showChat ? 'with-chat' : ''}`}>
+    <div
+      className={`huddle-room ${showChat ? 'with-chat' : ''}`}
+      onMouseMove={() => setMouseActivity((n) => n + 1)}
+    >
       <div className="huddle-room-header">
         <div className="huddle-room-info">
           <span className="huddle-pulse" />
@@ -122,16 +149,36 @@ export default function HuddleRoom({ send, setRtcSignalHandler }: Props) {
             <ParticipantGrid
               participants={currentCall.participants}
               currentUser={state.username || ''}
-              speakingUsers={new Set()}
+              speakingUsers={speakingUsers}
               localStream={media.localStream}
               cameraEnabled={media.cameraEnabled}
               remoteStreams={remoteStreams}
+              dominantSpeaker={dominantSpeaker}
+              participantMedia={state.callParticipantMedia}
             />
           )}
+          {/* Floating reactions */}
+          {reactions.map((r) => (
+            <FloatingReaction
+              key={r.id}
+              emoji={r.emoji}
+              style={{
+                bottom: '100px',
+                left: `${30 + Math.random() * 40}%`,
+              }}
+              onDone={() => setReactions((prev) => prev.filter((x) => x.id !== r.id))}
+            />
+          ))}
         </div>
         {showChat && <HuddleChatPanel send={send} onClose={() => setShowChat(false)} />}
       </div>
-      <HuddleControls media={media} showChat={showChat} onToggleChat={() => setShowChat(!showChat)} />
+      <HuddleControls
+        media={media}
+        showChat={showChat}
+        onToggleChat={() => setShowChat(!showChat)}
+        onMouseActivity={() => {}}
+        send={send}
+      />
     </div>
   );
 }

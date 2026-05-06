@@ -190,6 +190,14 @@ export interface WsCallNetworkQuality {
   quality: number;
 }
 
+export interface WsCallReaction {
+  type: 'call_reaction';
+  meeting_id: string;
+  channel_id: string;
+  username: string;
+  emoji: string;
+}
+
 export interface WsRtcSignal {
   type: 'rtc_signal';
   meeting_id: string;
@@ -256,6 +264,7 @@ export type WsServerMsg =
   | WsCallMediaEvent
   | WsCallSpeaking
   | WsCallNetworkQuality
+  | WsCallReaction
   | WsTyping
   | WsReactionUpdate
   | WsThreadReply

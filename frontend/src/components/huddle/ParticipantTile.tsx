@@ -7,9 +7,11 @@ interface Props {
   isSpeaking: boolean;
   hasVideo: boolean;
   stream: MediaStream | null;
+  isMuted?: boolean;
+  isCameraOff?: boolean;
 }
 
-export default function ParticipantTile({ username, isLocal, isSpeaking, hasVideo, stream }: Props) {
+export default function ParticipantTile({ username, isLocal, isSpeaking, hasVideo, stream, isMuted, isCameraOff }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [videoLive, setVideoLive] = useState(false);
@@ -21,7 +23,6 @@ export default function ParticipantTile({ username, isLocal, isSpeaking, hasVide
       return;
     }
 
-    // Listen for track additions on the remote stream
     const checkVideo = () => {
       const hasVid = stream.getVideoTracks().length > 0 && stream.getVideoTracks().some(t => t.enabled);
       setVideoLive(hasVid);
@@ -62,7 +63,7 @@ export default function ParticipantTile({ username, isLocal, isSpeaking, hasVide
           ref={videoRef}
           autoPlay
           playsInline
-          muted // Always mute video element (audio plays via separate element)
+          muted
           className="participant-video"
         />
       ) : (
@@ -73,6 +74,27 @@ export default function ParticipantTile({ username, isLocal, isSpeaking, hasVide
       {/* Hidden audio element for remote participants */}
       {!isLocal && stream && (
         <audio ref={audioRef} autoPlay playsInline />
+      )}
+      {/* Status badges */}
+      {(isMuted || isCameraOff) && (
+        <div className="participant-badge-bar">
+          {isMuted && (
+            <span className="participant-badge mic-off" title="Muted">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/>
+              </svg>
+            </span>
+          )}
+          {isCameraOff && (
+            <span className="participant-badge cam-off" title="Camera Off">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M16 16v1a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2h2m5.66 0H14a2 2 0 012 2v3.34l1 1L23 7v10"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </span>
+          )}
+        </div>
       )}
       <div className="participant-label">
         <span>{username}{isLocal ? ' (You)' : ''}</span>

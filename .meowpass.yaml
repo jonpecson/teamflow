@@ -1,0 +1,5 @@
+# MeowPass project config — safe to commit (no secrets)
+# https://meowpass.dev/docs/cli
+version: 1
+vault: f73754e2-387b-4829-8fa8-335008b610a8
+default_env: default

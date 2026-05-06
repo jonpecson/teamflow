@@ -5,6 +5,7 @@ import { notifyMessage, notifyCallStarted, notifyCallJoined } from '../utils/not
 import type { WsServerMsg } from '../api/types';
 
 type RtcSignalHandler = (fromUser: string, signalType: string, data: unknown) => void;
+type CallReactionHandler = (username: string, emoji: string) => void;
 
 export function useWebSocket() {
   const { token, currentChannelId } = useAppState();
@@ -13,6 +14,9 @@ export function useWebSocket() {
   const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentChannelRef = useRef(currentChannelId);
   const rtcHandlerRef = useRef<RtcSignalHandler | null>(null);
+  const callReactionRef = useRef<CallReactionHandler | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   currentChannelRef.current = currentChannelId;
 
@@ -26,6 +30,10 @@ export function useWebSocket() {
     rtcHandlerRef.current = handler;
   }, []);
 
+  const setCallReactionHandler = useCallback((handler: CallReactionHandler | null) => {
+    callReactionRef.current = handler;
+  }, []);
+
   useEffect(() => {
     if (!token) return;
 
@@ -37,6 +45,7 @@ export function useWebSocket() {
     wsRef.current = ws;
 
     ws.onopen = () => {
+      reconnectAttemptRef.current = 0;
       pingRef.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ping' }));
@@ -45,7 +54,13 @@ export function useWebSocket() {
     };
 
     ws.onmessage = (event) => {
-      const msg: WsServerMsg = JSON.parse(event.data);
+      let msg: WsServerMsg;
+      try {
+        msg = JSON.parse(event.data);
+      } catch (e) {
+        console.warn('WS: failed to parse message', e);
+        return;
+      }
 
       switch (msg.type) {
         case 'message':
@@ -152,12 +167,17 @@ export function useWebSocket() {
           SoundEngine.playLeave();
           break;
 
-        case 'typing':
+        case 'typing': {
           dispatch({ type: 'SET_TYPING', channelId: msg.channel_id, username: msg.username });
-          setTimeout(() => {
+          const typingKey = `${msg.channel_id}:${msg.username}`;
+          const prev = typingTimeoutsRef.current.get(typingKey);
+          if (prev) clearTimeout(prev);
+          typingTimeoutsRef.current.set(typingKey, setTimeout(() => {
             dispatch({ type: 'CLEAR_TYPING', channelId: msg.channel_id, username: msg.username });
-          }, 3000);
+            typingTimeoutsRef.current.delete(typingKey);
+          }, 3000));
           break;
+        }
 
         case 'reaction_update':
           dispatch({
@@ -178,6 +198,29 @@ export function useWebSocket() {
           dispatch({ type: 'DELETE_MESSAGE', channelId: msg.channel_id, messageId: msg.message_id });
           break;
 
+        case 'call_muted':
+          dispatch({ type: 'CALL_MEDIA_UPDATE', username: msg.username, muted: true });
+          break;
+
+        case 'call_unmuted':
+          dispatch({ type: 'CALL_MEDIA_UPDATE', username: msg.username, muted: false });
+          break;
+
+        case 'call_video_on':
+          dispatch({ type: 'CALL_MEDIA_UPDATE', username: msg.username, cameraOff: false });
+          break;
+
+        case 'call_video_off':
+          dispatch({ type: 'CALL_MEDIA_UPDATE', username: msg.username, cameraOff: true });
+          break;
+
+        case 'call_reaction':
+          // Handled via callback ref — dispatched in HuddleRoom
+          if (callReactionRef.current) {
+            callReactionRef.current(msg.username, msg.emoji);
+          }
+          break;
+
         case 'rtc_signal':
           rtcHandlerRef.current?.(msg.from_user, msg.signal_type, msg.data);
           break;
@@ -193,11 +236,14 @@ export function useWebSocket() {
 
     ws.onclose = () => {
       if (pingRef.current) clearInterval(pingRef.current);
+      const attempt = reconnectAttemptRef.current;
+      const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
+      reconnectAttemptRef.current = attempt + 1;
       setTimeout(() => {
         if (localStorage.getItem('token')) {
           dispatch({ type: 'LOGIN', token: localStorage.getItem('token')!, userId: localStorage.getItem('userId')!, username: localStorage.getItem('username')! });
         }
-      }, 3000);
+      }, delay);
     };
 
     return () => {
@@ -206,5 +252,5 @@ export function useWebSocket() {
     };
   }, [token, dispatch]);
 
-  return { send, ws: wsRef, setRtcSignalHandler };
+  return { send, ws: wsRef, setRtcSignalHandler, setCallReactionHandler };
 }

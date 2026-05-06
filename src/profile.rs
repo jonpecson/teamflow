@@ -137,15 +137,8 @@ pub async fn upload_avatar(
 
     // Upload to S3
     let key = format!("avatars/{}.jpg", claims.sub);
-    let aws_config = aws_config::defaults(aws_config::BehaviorVersion::latest())
-        .region(aws_config::Region::new(
-            std::env::var("AWS_REGION").unwrap_or_else(|_| "us-west-2".into()),
-        ))
-        .load()
-        .await;
-    let s3 = aws_sdk_s3::Client::new(&aws_config);
 
-    s3.put_object()
+    state.s3.put_object()
         .bucket(&bucket)
         .key(&key)
         .body(resized.into())

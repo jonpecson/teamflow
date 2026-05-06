@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 
 interface Props {
   onClose: () => void;
+  onSwitchMic?: (deviceId: string) => void;
+  onSwitchCamera?: (deviceId: string) => void;
+  onSwitchSpeaker?: (deviceId: string) => void;
+  selectedMicId?: string | null;
+  selectedCameraId?: string | null;
+  selectedSpeakerId?: string | null;
+  filterKind?: 'audioinput' | 'videoinput' | 'audiooutput';
 }
 
 interface DeviceGroup {
@@ -10,7 +17,16 @@ interface DeviceGroup {
   audiooutput: MediaDeviceInfo[];
 }
 
-export default function DevicePicker({ onClose }: Props) {
+export default function DevicePicker({
+  onClose,
+  onSwitchMic,
+  onSwitchCamera,
+  onSwitchSpeaker,
+  selectedMicId,
+  selectedCameraId,
+  selectedSpeakerId,
+  filterKind,
+}: Props) {
   const [devices, setDevices] = useState<DeviceGroup>({ audioinput: [], videoinput: [], audiooutput: [] });
 
   useEffect(() => {
@@ -30,36 +46,51 @@ export default function DevicePicker({ onClose }: Props) {
     return () => navigator.mediaDevices.removeEventListener('devicechange', loadDevices);
   }, []);
 
+  const showMic = !filterKind || filterKind === 'audioinput';
+  const showCamera = !filterKind || filterKind === 'videoinput';
+  const showSpeaker = !filterKind || filterKind === 'audiooutput';
+
   return (
-    <div className="device-picker" onClick={(e) => e.stopPropagation()}>
-      <div className="device-picker-header">
-        <h4>Devices</h4>
-        <button className="device-picker-close" onClick={onClose}>&times;</button>
-      </div>
-      {devices.audioinput.length > 0 && (
+    <div className={`device-picker ${filterKind ? 'device-picker-narrow' : ''}`} onClick={(e) => e.stopPropagation()}>
+      {!filterKind && (
+        <div className="device-picker-header">
+          <h4>Devices</h4>
+          <button className="device-picker-close" onClick={onClose}>&times;</button>
+        </div>
+      )}
+      {showMic && devices.audioinput.length > 0 && (
         <div className="device-group">
           <label>Microphone</label>
-          <select>
+          <select
+            value={selectedMicId || ''}
+            onChange={(e) => onSwitchMic?.(e.target.value)}
+          >
             {devices.audioinput.map((d) => (
               <option key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 8)}`}</option>
             ))}
           </select>
         </div>
       )}
-      {devices.videoinput.length > 0 && (
+      {showCamera && devices.videoinput.length > 0 && (
         <div className="device-group">
           <label>Camera</label>
-          <select>
+          <select
+            value={selectedCameraId || ''}
+            onChange={(e) => onSwitchCamera?.(e.target.value)}
+          >
             {devices.videoinput.map((d) => (
               <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${d.deviceId.slice(0, 8)}`}</option>
             ))}
           </select>
         </div>
       )}
-      {devices.audiooutput.length > 0 && (
+      {showSpeaker && devices.audiooutput.length > 0 && (
         <div className="device-group">
           <label>Speaker</label>
-          <select>
+          <select
+            value={selectedSpeakerId || ''}
+            onChange={(e) => onSwitchSpeaker?.(e.target.value)}
+          >
             {devices.audiooutput.map((d) => (
               <option key={d.deviceId} value={d.deviceId}>{d.label || `Speaker ${d.deviceId.slice(0, 8)}`}</option>
             ))}

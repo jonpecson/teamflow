@@ -330,6 +330,7 @@ pub async fn start_server(static_dir: Option<&str>) -> Result<(), Box<dyn std::e
         .region(aws_config::Region::new(config.aws_region.clone()))
         .load()
         .await;
+    let s3_client = Arc::new(aws_sdk_s3::Client::new(&aws_config));
     let chime_client = aws_sdk_chimesdkmeetings::Client::new(&aws_config);
     let call_provider: Arc<dyn calls::provider::CallProvider> =
         Arc::new(ChimeProvider::new(chime_client));
@@ -414,6 +415,8 @@ pub async fn start_server(static_dir: Option<&str>) -> Result<(), Box<dyn std::e
         call_provider: call_provider.clone(),
         rate_limiter,
         push: push_service,
+        s3: s3_client,
+        pending_cleanups: Arc::new(DashMap::new()),
     };
 
     tokio::spawn(calls::cleanup::run_cleanup(

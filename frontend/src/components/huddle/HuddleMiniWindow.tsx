@@ -1,15 +1,28 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useCalls } from '../../hooks/useCalls';
+import { useAppDispatch } from '../../context/AppContext';
 
-export default function HuddleMiniWindow() {
-  const { currentMeetingId, activeCalls, callStartTime, leaveCall, toggleMic, micEnabled } = useCalls();
-  const [pos, setPos] = useState({ x: window.innerWidth - 280, y: window.innerHeight - 160 });
+import { avatarColor, avatarInitial } from '../../utils/colors';
+import type { useLocalMedia } from '../../hooks/useLocalMedia';
+
+interface Props {
+  media?: ReturnType<typeof useLocalMedia>;
+  callChannelId?: string;
+}
+
+export default function HuddleMiniWindow({ media, callChannelId }: Props) {
+  const { currentMeetingId, activeCalls, callStartTime, leaveCall } = useCalls();
+  const dispatch = useAppDispatch();
+  const [pos, setPos] = useState({ x: window.innerWidth - 280, y: window.innerHeight - 220 });
   const [dragging, setDragging] = useState(false);
   const [timer, setTimer] = useState('00:00');
+  const [wasDragged, setWasDragged] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const currentCall = currentMeetingId ? activeCalls.get(currentMeetingId) : null;
+  const username = localStorage.getItem('username') || '';
 
   useEffect(() => {
     if (!callStartTime) return;
@@ -20,8 +33,17 @@ export default function HuddleMiniWindow() {
     return () => clearInterval(interval);
   }, [callStartTime]);
 
+  // Attach local video
+  useEffect(() => {
+    if (videoRef.current && media?.localStream && media.cameraEnabled) {
+      videoRef.current.srcObject = media.localStream;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [media?.localStream, media?.cameraEnabled]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setDragging(true);
+    setWasDragged(false);
     dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
   }, [pos]);
 
@@ -29,6 +51,7 @@ export default function HuddleMiniWindow() {
     if (!dragging) return;
     const handleMove = (e: MouseEvent) => {
       setPos({ x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y });
+      setWasDragged(true);
     };
     const handleUp = () => setDragging(false);
     window.addEventListener('mousemove', handleMove);
@@ -39,14 +62,39 @@ export default function HuddleMiniWindow() {
     };
   }, [dragging]);
 
+  const handleClick = () => {
+    if (!wasDragged && callChannelId) {
+      dispatch({ type: 'SELECT_CHANNEL', channelId: callChannelId });
+    }
+  };
+
   if (!currentCall) return null;
+
+  const showVideo = media?.cameraEnabled && media?.localStream;
 
   return createPortal(
     <div
       className="huddle-mini"
       style={{ left: pos.x, top: pos.y }}
       onMouseDown={handleMouseDown}
+      onClick={handleClick}
     >
+      {/* Video preview or avatar */}
+      <div className="huddle-mini-video-area">
+        {showVideo ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="huddle-mini-video"
+          />
+        ) : (
+          <div className="huddle-mini-avatar" style={{ background: avatarColor(username) }}>
+            {avatarInitial(username)}
+          </div>
+        )}
+      </div>
       <div className="huddle-mini-header">
         <span className="huddle-pulse" />
         <span className="huddle-mini-channel">#{currentCall.channel_name}</span>
@@ -55,9 +103,9 @@ export default function HuddleMiniWindow() {
       <div className="huddle-mini-timer">{timer}</div>
       <div className="huddle-mini-controls">
         <button
-          className={`huddle-mini-btn ${micEnabled ? '' : 'muted'}`}
-          onClick={(e) => { e.stopPropagation(); toggleMic(); }}
-          title={micEnabled ? 'Mute' : 'Unmute'}
+          className={`huddle-mini-btn ${media?.micEnabled === false ? 'muted' : ''}`}
+          onClick={(e) => { e.stopPropagation(); media?.toggleMic(); }}
+          title={media?.micEnabled ? 'Mute' : 'Unmute'}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
@@ -65,8 +113,17 @@ export default function HuddleMiniWindow() {
           </svg>
         </button>
         <button
+          className={`huddle-mini-btn ${media?.cameraEnabled ? '' : 'muted'}`}
+          onClick={(e) => { e.stopPropagation(); media?.toggleCamera(); }}
+          title={media?.cameraEnabled ? 'Camera Off' : 'Camera On'}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        </button>
+        <button
           className="huddle-mini-btn danger"
-          onClick={(e) => { e.stopPropagation(); leaveCall(); }}
+          onClick={(e) => { e.stopPropagation(); media?.stopAll(); leaveCall(); }}
           title="Leave"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

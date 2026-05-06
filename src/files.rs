@@ -102,15 +102,7 @@ pub async fn upload_file(
     let ext = file_name.rsplit('.').next().unwrap_or("bin");
     let s3_key = format!("files/{channel_id}/{file_id}.{ext}");
 
-    let aws_config = aws_config::defaults(aws_config::BehaviorVersion::latest())
-        .region(aws_config::Region::new(
-            std::env::var("AWS_REGION").unwrap_or_else(|_| "us-west-2".into()),
-        ))
-        .load()
-        .await;
-    let s3 = aws_sdk_s3::Client::new(&aws_config);
-
-    s3.put_object()
+    state.s3.put_object()
         .bucket(&bucket)
         .key(&s3_key)
         .body(data.into())
@@ -203,9 +195,21 @@ pub async fn upload_file(
 /// GET /api/messages/:id/attachments — get attachments for a message
 pub async fn message_attachments(
     State(state): State<AppState>,
-    _claims: Claims,
+    claims: Claims,
     Path(message_id): Path<Uuid>,
 ) -> Result<Json<Vec<AttachmentResp>>, AppError> {
+    // Verify the requesting user is a member of the channel this message belongs to
+    sqlx::query_as::<_, (Uuid,)>(
+        "SELECT cm.channel_id FROM channel_members cm \
+         JOIN messages m ON m.channel_id = cm.channel_id \
+         WHERE m.id = $1 AND cm.user_id = $2",
+    )
+    .bind(message_id)
+    .bind(claims.sub)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::Auth("Not a member of this channel".into()))?;
+
     let rows = sqlx::query_as::<_, (Uuid, String, i64, String, String, Option<i32>, Option<i32>)>(
         "SELECT id, file_name, file_size, content_type, url, width, height \
          FROM message_attachments WHERE message_id = $1 ORDER BY created_at",

@@ -40,6 +40,9 @@ export interface AppState {
   // Typing
   typingUsers: Map<string, Map<string, number>>; // channelId -> Map<username, timestamp>
 
+  // Call participant media state
+  callParticipantMedia: Map<string, { muted: boolean; cameraOff: boolean }>;
+
   // View mode
   sidebarView: 'threads' | 'dms' | 'mentions' | 'saved' | null;
 }
@@ -76,6 +79,8 @@ export type AppAction =
   | { type: 'UPDATE_REACTION'; channelId: string; messageId: string; emoji: string; username: string; added: boolean }
   | { type: 'DELETE_MESSAGE'; channelId: string; messageId: string }
   | { type: 'ADD_THREAD_REPLY'; channelId: string; parentId: string }
+  | { type: 'CALL_MEDIA_UPDATE'; username: string; muted?: boolean; cameraOff?: boolean }
+  | { type: 'CLEAR_CALL_MEDIA' }
   | { type: 'SET_SIDEBAR_VIEW'; view: AppState['sidebarView'] };
 
 const initialState: AppState = {
@@ -101,6 +106,7 @@ const initialState: AppState = {
   callStartTime: null,
   unreadCounts: new Map(),
   typingUsers: new Map(),
+  callParticipantMedia: new Map(),
   sidebarView: null,
 };
 
@@ -182,7 +188,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const existing = msgs.get(action.message.channel_id) || [];
       // Deduplicate by id (system messages can arrive from both local dispatch and WS)
       if (existing.some((m) => m.id === action.message.id)) return state;
-      msgs.set(action.message.channel_id, [...existing, action.message]);
+      let updated = [...existing, action.message];
+      // Cap at 500 messages per channel to prevent memory growth
+      if (updated.length > 500) {
+        updated = updated.slice(updated.length - 500);
+      }
+      msgs.set(action.message.channel_id, updated);
       return { ...state, messages: msgs };
     }
     case 'SET_USERS':
@@ -312,6 +323,17 @@ function appReducer(state: AppState, action: AppAction): AppState {
       msgs.set(action.channelId, updated);
       return { ...state, messages: msgs };
     }
+    case 'CALL_MEDIA_UPDATE': {
+      const media = new Map(state.callParticipantMedia);
+      const existing = media.get(action.username) || { muted: false, cameraOff: false };
+      media.set(action.username, {
+        muted: action.muted !== undefined ? action.muted : existing.muted,
+        cameraOff: action.cameraOff !== undefined ? action.cameraOff : existing.cameraOff,
+      });
+      return { ...state, callParticipantMedia: media };
+    }
+    case 'CLEAR_CALL_MEDIA':
+      return { ...state, callParticipantMedia: new Map() };
     case 'SET_SIDEBAR_VIEW':
       return { ...state, sidebarView: action.view, currentChannelId: action.view ? null : state.currentChannelId };
     default:

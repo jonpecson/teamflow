@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useMessages } from '../../hooks/useMessages';
 import { useAppState } from '../../context/AppContext';
 import { api } from '../../api/client';
+import { avatarColor, avatarInitial } from '../../utils/colors';
+import EmojiPicker from './EmojiPicker';
 
 interface MessageInputProps {
   send: (msg: object) => void;
@@ -14,8 +16,10 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [showComposerEmoji, setShowComposerEmoji] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const lastTypingRef = useRef(0);
   const { sendMessage } = useMessages();
   const state = useAppState();
@@ -36,17 +40,26 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
     }
   }, [quotePrefix, onClearQuote]);
 
-  // Build mention candidates from allUsers
+  // Auto-resize textarea
+  const autoResize = useCallback(() => {
+    const ta = inputRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 150) + 'px';
+  }, []);
+
+  // Build mention candidates with online status
   const mentionCandidates = useMemo(() => {
+    const onlineUsernames = new Set(state.onlineUsers.values());
     const users = state.allUsers.map((u) => ({
       username: u.username,
       display: u.username,
+      isOnline: onlineUsernames.has(u.username),
     }));
-    // Add @channel and @here
-    users.push({ username: 'channel', display: '@channel — notify all members' });
-    users.push({ username: 'here', display: '@here — notify online members' });
+    users.push({ username: 'channel', display: '@channel \u2014 notify all members', isOnline: true });
+    users.push({ username: 'here', display: '@here \u2014 notify online members', isOnline: true });
     return users;
-  }, [state.allUsers]);
+  }, [state.allUsers, state.onlineUsers]);
 
   const filteredMentions = useMemo(() => {
     if (mentionQuery === null) return [];
@@ -56,10 +69,11 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
       .slice(0, 8);
   }, [mentionQuery, mentionCandidates]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
     if (val) handleTyping();
+    autoResize();
 
     // Detect @mention
     const cursorPos = e.target.selectionStart || val.length;
@@ -103,14 +117,29 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
         return;
       }
     }
+
+    // Enter without Shift = submit; Shift+Enter = newline
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+
+    // Escape closes emoji picker
+    if (e.key === 'Escape') {
+      setShowComposerEmoji(false);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!content.trim()) return;
     sendMessage(send, content);
     setContent('');
     setMentionQuery(null);
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
     inputRef.current?.focus();
   };
 
@@ -140,6 +169,21 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
     setTimeout(() => {
       input.focus();
       const newPos = selected ? start + prefix.length + selected.length + suffix.length : start + prefix.length;
+      input.setSelectionRange(newPos, newPos);
+      autoResize();
+    }, 0);
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const input = inputRef.current;
+    if (!input) return;
+    const start = input.selectionStart || content.length;
+    const newContent = content.slice(0, start) + emoji + content.slice(start);
+    setContent(newContent);
+    setShowComposerEmoji(false);
+    setTimeout(() => {
+      input.focus();
+      const newPos = start + emoji.length;
       input.setSelectionRange(newPos, newPos);
     }, 0);
   };
@@ -174,15 +218,21 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
                   className={`mention-option ${i === mentionIndex ? 'active' : ''}`}
                   onMouseDown={(e) => { e.preventDefault(); insertMention(user.username); }}
                 >
+                  {user.username !== 'channel' && user.username !== 'here' && (
+                    <span className="mention-avatar" style={{ background: avatarColor(user.username) }}>
+                      {avatarInitial(user.username)}
+                      <span className={`mention-status-dot ${user.isOnline ? 'online' : ''}`} />
+                    </span>
+                  )}
                   <span className="mention-at">@</span>{user.display}
                 </button>
               ))}
             </div>
           )}
-          <form onSubmit={handleSubmit} style={{ display: 'flex' }}>
-            <input
+          <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <textarea
               ref={inputRef}
-              type="text"
+              rows={1}
               placeholder="Message..."
               maxLength={4000}
               autoComplete="off"
@@ -217,6 +267,17 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
               </svg>
             </button>
+            <button
+              ref={emojiButtonRef}
+              type="button"
+              className="md-toolbar-btn"
+              title="Emoji"
+              onClick={() => setShowComposerEmoji(!showComposerEmoji)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+              </svg>
+            </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -227,6 +288,17 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
           </div>
         </div>
       </div>
+      {/* Emoji picker */}
+      {showComposerEmoji && emojiButtonRef.current && (
+        <EmojiPicker
+          onSelect={insertEmoji}
+          onClose={() => setShowComposerEmoji(false)}
+          position={{
+            x: emojiButtonRef.current.getBoundingClientRect().left,
+            y: emojiButtonRef.current.getBoundingClientRect().top,
+          }}
+        />
+      )}
     </>
   );
 }

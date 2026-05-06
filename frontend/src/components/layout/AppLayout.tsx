@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './Sidebar';
 import ChatHeader from './ChatHeader';
 import MessageList from '../messages/MessageList';
 import MessageInput from '../messages/MessageInput';
 import ThreadPanel from '../messages/ThreadPanel';
+import DropZone from '../messages/DropZone';
 import { requestNotificationPermission } from '../../utils/notifications';
 import HuddleRoom from '../huddle/HuddleRoom';
 import HuddleMiniWindow from '../huddle/HuddleMiniWindow';
@@ -15,7 +16,9 @@ import { useChannels } from '../../hooks/useChannels';
 import { usePresence } from '../../hooks/usePresence';
 import { useCalls } from '../../hooks/useCalls';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { useLocalMedia } from '../../hooks/useLocalMedia';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
+import { api } from '../../api/client';
 import OnboardingModal from '../settings/OnboardingModal';
 import SidebarViewPanel from './SidebarViewPanel';
 import IncomingCallBanner from '../calls/IncomingCallBanner';
@@ -25,7 +28,8 @@ export default function AppLayout() {
   const { loadChannels, currentChannelId, myChannelIds, channels, dmChannels } = useChannels();
   const { loadUsers } = usePresence();
   const { loadActiveCalls, currentMeetingId, activeCalls } = useCalls();
-  const { send, setRtcSignalHandler } = useWebSocket();
+  const { send, setRtcSignalHandler, setCallReactionHandler } = useWebSocket();
+  const media = useLocalMedia();
   const state = useAppState();
   const dispatch = useAppDispatch();
 
@@ -36,19 +40,19 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [threadMessage, setThreadMessage] = useState<MessageData | null>(null);
   const [quotePrefix, setQuotePrefix] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
 
   useEffect(() => {
     loadChannels();
     loadUsers();
     loadActiveCalls();
     requestNotificationPermission();
-    // Poll active calls every 10s and re-sync presence every 30s
     const callPoll = setInterval(loadActiveCalls, 10000);
     const presencePoll = setInterval(loadUsers, 30000);
     return () => { clearInterval(callPoll); clearInterval(presencePoll); };
   }, [loadChannels, loadUsers, loadActiveCalls]);
 
-  // Close panels when switching channels
   useEffect(() => {
     setShowDetail(false);
     setThreadMessage(null);
@@ -82,12 +86,47 @@ export default function AppLayout() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [currentMeetingId]);
 
-  // Compute incoming calls — calls in my channels that I'm not in
+  // Drag-and-drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && currentChannelId) {
+      try {
+        await api.uploadFile(currentChannelId, file);
+      } catch (err) {
+        console.error('Drop upload failed:', err);
+      }
+    }
+  }, [currentChannelId]);
+
+  // Compute incoming calls
   const incomingCalls: ActiveCall[] = [];
   for (const [, call] of activeCalls) {
-    if (call.meeting_id === currentMeetingId) continue; // already in this call
-    if (!myChannelIds.has(call.channel_id)) continue; // not my channel
-    if (call.started_by === state.username) continue; // I started it
+    if (call.meeting_id === currentMeetingId) continue;
+    if (!myChannelIds.has(call.channel_id)) continue;
+    if (call.started_by === state.username) continue;
     incomingCalls.push(call);
   }
 
@@ -97,12 +136,16 @@ export default function AppLayout() {
     : false;
   const showMiniWindow = currentMeetingId && !isInCallOnCurrentChannel;
 
+  // Find the channel the user is in a call on (for mini window click-to-navigate)
+  const callChannelId = currentMeetingId
+    ? Array.from(activeCalls.values()).find((c) => c.meeting_id === currentMeetingId)?.channel_id
+    : undefined;
+
   const allChannels = [...channels, ...dmChannels];
   const currentChannel = allChannels.find((c) => c.id === currentChannelId);
 
   return (
     <div className={`app ${isInCallOnCurrentChannel ? 'in-call' : ''}`}>
-      {/* Sidebar: always available on mobile (collapsible), hidden on desktop during calls */}
       <Sidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -124,11 +167,24 @@ export default function AppLayout() {
             )}
 
             {isInCallOnCurrentChannel && (
-              <HuddleRoom send={send} setRtcSignalHandler={setRtcSignalHandler} />
+              <HuddleRoom
+                send={send}
+                setRtcSignalHandler={setRtcSignalHandler}
+                setCallReactionHandler={setCallReactionHandler}
+                media={media}
+              />
             )}
             {!isInCallOnCurrentChannel && (
               <div className="chat-body">
-                <div className="chat-content">
+                <div
+                  className="chat-content"
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  style={{ position: 'relative' }}
+                >
+                  {isDragging && <DropZone />}
                   <MessageList onOpenThread={handleOpenThread} onQuoteReply={handleQuoteReply} />
                   {isMember && <MessageInput send={send} quotePrefix={quotePrefix} onClearQuote={() => setQuotePrefix('')} />}
                 </div>
@@ -157,7 +213,7 @@ export default function AppLayout() {
         )}
       </main>
 
-      {showMiniWindow && <HuddleMiniWindow />}
+      {showMiniWindow && <HuddleMiniWindow media={media} callChannelId={callChannelId} />}
       <IncomingCallBanner calls={incomingCalls} />
 
       {showCreateChannel && <CreateChannelModal onClose={() => setShowCreateChannel(false)} />}

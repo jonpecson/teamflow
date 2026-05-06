@@ -98,11 +98,18 @@ async fn handle_socket(socket: WebSocket, state: AppState, user_id: Uuid, userna
             "WS disconnected during active call(s), grace period started"
         );
 
+        // Cancel any previous pending cleanup for this user
+        if let Some((_, prev_handle)) = state.pending_cleanups.remove(&user_id) {
+            prev_handle.abort();
+            tracing::info!(user_id = %user_id, "Cancelled previous pending cleanup task");
+        }
+
         // Schedule delayed cleanup — if user reconnects within grace period,
         // the cleanup worker will see they're back online and skip removal
         let state_clone = state.clone();
         let username_clone = username.to_string();
-        tokio::spawn(async move {
+        let cleanup_user_id = user_id;
+        let handle = tokio::spawn(async move {
             tokio::time::sleep(std::time::Duration::from_secs(grace_secs)).await;
 
             // Check if user reconnected
@@ -148,7 +155,10 @@ async fn handle_socket(socket: WebSocket, state: AppState, user_id: Uuid, userna
                     tracing::info!(meeting_id = %meeting_id, "Auto-ended empty call after grace period");
                 }
             }
+            // Remove self from pending cleanups
+            state_clone.pending_cleanups.remove(&cleanup_user_id);
         });
+        state.pending_cleanups.insert(user_id, handle);
     }
 
     broadcast_presence(&state, user_id, &username, PresenceStatus::Offline).await;
@@ -286,16 +296,38 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 return;
             }
 
-            // Insert thread reply
-            let row = sqlx::query_as::<_, (Uuid, chrono::DateTime<chrono::Utc>)>(
-                "INSERT INTO messages (channel_id, user_id, content, parent_id) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
-            )
-            .bind(channel_id)
-            .bind(user_id)
-            .bind(&content)
-            .bind(parent_id)
-            .fetch_one(&state.db)
-            .await;
+            // Insert thread reply (with encryption if configured)
+            let row = if let Some(ref key) = state.config.message_encryption_key {
+                match crate::crypto::encrypt(&content, key) {
+                    Ok((ciphertext, nonce)) => {
+                        sqlx::query_as::<_, (Uuid, chrono::DateTime<chrono::Utc>)>(
+                            "INSERT INTO messages (channel_id, user_id, content, content_encrypted, content_nonce, encrypted, parent_id) VALUES ($1, $2, '', $3, $4, true, $5) RETURNING id, created_at",
+                        )
+                        .bind(channel_id)
+                        .bind(user_id)
+                        .bind(&ciphertext)
+                        .bind(&nonce)
+                        .bind(parent_id)
+                        .fetch_one(&state.db)
+                        .await
+                    }
+                    Err(e) => {
+                        tracing::error!("Thread reply encryption failed: {e}");
+                        send_error(state, user_id, "Failed to send reply");
+                        return;
+                    }
+                }
+            } else {
+                sqlx::query_as::<_, (Uuid, chrono::DateTime<chrono::Utc>)>(
+                    "INSERT INTO messages (channel_id, user_id, content, parent_id) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
+                )
+                .bind(channel_id)
+                .bind(user_id)
+                .bind(&content)
+                .bind(parent_id)
+                .fetch_one(&state.db)
+                .await
+            };
 
             let (msg_id, created_at) = match row {
                 Ok(r) => r,
@@ -499,6 +531,13 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 }, Some(user_id)).await;
             }
         }
+        ClientMsg::CallReaction { meeting_id, emoji } => {
+            if let Some(ch) = validate_call_participant(state, &meeting_id, user_id) {
+                broadcast_call_event(state, ch, ServerMsg::CallReaction {
+                    meeting_id, channel_id: ch, username: username.to_string(), emoji,
+                }).await;
+            }
+        }
         ClientMsg::CallDecline { meeting_id } => {
             if let Some(meeting) = state.calls.meetings.get(&meeting_id) {
                 let ch = meeting.channel_id;
@@ -509,8 +548,18 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
                 }, Some(user_id)).await;
             }
         }
-        // WebRTC signaling — relay to target user (no participant check — signals must flow freely)
+        // WebRTC signaling — relay to target user with meeting participant validation
         ClientMsg::RtcSignal { meeting_id, target_user, signal_type, data } => {
+            // Verify sender is a participant in the meeting
+            let sender_in_meeting = state.calls.meetings.get(&meeting_id)
+                .map(|m| m.participants.iter().any(|(uid, _)| *uid == user_id))
+                .unwrap_or(false);
+
+            if !sender_in_meeting {
+                send_error(state, user_id, "Not a participant in this meeting");
+                return;
+            }
+
             if let Ok(Some((target_uid,))) = sqlx::query_as::<_, (Uuid,)>(
                 "SELECT id FROM users WHERE username = $1",
             )
@@ -518,6 +567,16 @@ async fn handle_client_msg(state: &AppState, user_id: Uuid, username: &str, text
             .fetch_optional(&state.db)
             .await
             {
+                // Verify target is also a participant
+                let target_in_meeting = state.calls.meetings.get(&meeting_id)
+                    .map(|m| m.participants.iter().any(|(uid, _)| *uid == target_uid))
+                    .unwrap_or(false);
+
+                if !target_in_meeting {
+                    send_error(state, user_id, "Target user not in this meeting");
+                    return;
+                }
+
                 if let Some(sender) = state.connections.get(&target_uid) {
                     tracing::info!(
                         from = %username, to = %target_user,

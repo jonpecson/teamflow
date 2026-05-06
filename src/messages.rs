@@ -119,11 +119,23 @@ pub struct ThreadQuery {
 /// GET /api/messages/:id/replies — get thread replies
 pub async fn thread_replies(
     State(state): State<AppState>,
-    _claims: Claims,
+    claims: Claims,
     Path(message_id): Path<Uuid>,
     Query(params): Query<ThreadQuery>,
 ) -> Result<Json<Vec<ThreadReplyResp>>, AppError> {
     let limit = params.limit.unwrap_or(100).min(200);
+
+    // Verify the requesting user is a member of the channel this message belongs to
+    sqlx::query_as::<_, (Uuid,)>(
+        "SELECT cm.channel_id FROM channel_members cm \
+         JOIN messages m ON m.channel_id = cm.channel_id \
+         WHERE m.id = $1 AND cm.user_id = $2",
+    )
+    .bind(message_id)
+    .bind(claims.sub)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::Auth("Not a member of this channel".into()))?;
 
     let rows = sqlx::query_as::<_, (Uuid, Uuid, Uuid, Uuid, String, Option<String>, Option<String>, Option<String>, String, DateTime<Utc>)>(
         "SELECT m.id, m.channel_id, m.parent_id, m.user_id, u.username, \
