@@ -15,6 +15,12 @@ pub enum AppError {
 
     #[error("Bad request: {0}")]
     BadRequest(String),
+
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    #[error("Internal error: {0}")]
+    Internal(String),
 }
 
 impl IntoResponse for AppError {
@@ -24,9 +30,11 @@ impl IntoResponse for AppError {
             AppError::Auth(m) => (StatusCode::UNAUTHORIZED, m.as_str()),
             AppError::NotFound(m) => (StatusCode::NOT_FOUND, m.as_str()),
             AppError::BadRequest(m) => (StatusCode::BAD_REQUEST, m.as_str()),
+            AppError::Validation(m) => (StatusCode::UNPROCESSABLE_ENTITY, m.as_str()),
+            AppError::Internal(m) => (StatusCode::INTERNAL_SERVER_ERROR, m.as_str()),
         };
 
-        if matches!(self, AppError::Db(_)) {
+        if matches!(self, AppError::Db(_) | AppError::Internal(_)) {
             tracing::error!("{self}");
         }
 

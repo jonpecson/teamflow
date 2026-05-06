@@ -516,3 +516,32 @@ pub async fn my_channels(
             .collect(),
     ))
 }
+
+/// POST /api/channels/:id/read — mark all messages in a channel as read for the current user
+pub async fn mark_channel_read(
+    State(state): State<AppState>,
+    claims: Claims,
+    Path(channel_id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    // Verify membership
+    sqlx::query_as::<_, (Uuid,)>(
+        "SELECT channel_id FROM channel_members WHERE channel_id = $1 AND user_id = $2",
+    )
+    .bind(channel_id)
+    .bind(claims.sub)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::Auth("Not a member of this channel".into()))?;
+
+    sqlx::query(
+        "INSERT INTO channel_read_positions (channel_id, user_id, last_read_at) \
+         VALUES ($1, $2, now()) \
+         ON CONFLICT (channel_id, user_id) DO UPDATE SET last_read_at = now()",
+    )
+    .bind(channel_id)
+    .bind(claims.sub)
+    .execute(&state.db)
+    .await?;
+
+    Ok(StatusCode::OK)
+}

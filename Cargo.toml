@@ -43,3 +43,5 @@ totp-rs = { version = "5", features = ["gen_secret", "otpauth"] }
 sha1_smol = "1"
 aws-sdk-s3 = "1"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+url = "2"
+html-escape = "0.2"

@@ -15,6 +15,9 @@ pub mod push;
 pub mod reactions;
 pub mod retention;
 pub mod state;
+pub mod search;
+pub mod status;
+pub mod unfurl;
 pub mod ws;
 
 use axum::extract::State;
@@ -239,12 +242,16 @@ fn build_router(state: AppState, static_path: &str) -> Router {
         .route("/messages/{id}/reactions", post(reactions::toggle_reaction))
         .route("/messages/{id}/bookmark", post(bookmarks::toggle_bookmark))
         .route("/messages/{id}/replies", get(messages::thread_replies))
-        .route("/messages/{id}", axum::routing::delete(messages::delete_message))
+        .route("/messages/{id}", axum::routing::put(messages::edit_message).delete(messages::delete_message))
         .route("/bookmarks", get(bookmarks::list_bookmarks))
         .route("/threads", get(messages::my_threads))
         .route("/mentions", get(messages::my_mentions))
         .route("/online", get(online_users))
         .route("/turn-credentials", get(turn_credentials))
+        .route("/search", get(search::search))
+        .route("/unfurl", post(unfurl::unfurl))
+        .route("/profile/status", axum::routing::put(status::update_status))
+        .route("/channels/{id}/read", post(channels::handlers::mark_channel_read))
         .route("/health", get(health));
 
     // HIPAA: Restrict CORS to production origin only

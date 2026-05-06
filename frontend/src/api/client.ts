@@ -169,6 +169,38 @@ export const api = {
     });
   },
 
+  // Message editing
+  editMessage: (messageId: string, content: string) =>
+    request(`/messages/${messageId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
+    }),
+
+  // Channel read position
+  markChannelRead: (channelId: string) =>
+    request(`/channels/${channelId}/read`, { method: 'POST' }),
+
+  // Search
+  search: (query: string, searchType?: string) => {
+    const params = new URLSearchParams({ q: query });
+    if (searchType) params.set('type', searchType);
+    return request(`/search?${params.toString()}`);
+  },
+
+  // Custom status
+  setStatus: (emoji: string | null, text: string | null) =>
+    request('/profile/status', {
+      method: 'PUT',
+      body: JSON.stringify({ emoji, text }),
+    }),
+
+  // URL unfurl
+  unfurl: (url: string) =>
+    request('/unfurl', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    }),
+
   // Logout (HIPAA C3)
   logout: () => request('/auth/logout', { method: 'POST' }).catch(() => {}),
 };

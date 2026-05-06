@@ -9,6 +9,9 @@ import ChannelList from '../channels/ChannelList';
 import DmList from '../channels/DmList';
 import OnlineList from '../users/OnlineList';
 import SettingsModal from '../settings/SettingsModal';
+import { SquarePen, Menu, X, Search, Sun, Settings, ChevronDown } from 'lucide-react';
+import { useCollapsible } from '../../hooks/useCollapsible';
+import StatusPicker from '../settings/StatusPicker';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -47,7 +50,11 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
   const [search, setSearch] = useState('');
   const dispatch = useAppDispatch();
   const [showSettings, setShowSettings] = useState(false);
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
   const { toggle: toggleTheme } = useTheme();
+  const [channelsOpen, toggleChannels] = useCollapsible('channels', true);
+  const [dmsOpen, toggleDms] = useCollapsible('dms', true);
+  const [teamOpen, toggleTeam] = useCollapsible('team', true);
 
   const setView = (view: 'threads' | 'dms' | 'mentions' | 'saved') => {
     dispatch({ type: 'SET_SIDEBAR_VIEW', view: state.sidebarView === view ? null : view });
@@ -77,22 +84,17 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
           <button className="sidebar-compose" title="New message" onClick={(e) => { e.stopPropagation(); onShowCreateChannel(); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
+            <SquarePen size={16} />
           </button>
           <button className="sidebar-compose mobile-menu-btn" title="Menu" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {isOpen ? <path d="M18 6L6 18M6 6l12 12"/> : <path d="M3 12h18M3 6h18M3 18h18"/>}
-            </svg>
+            {isOpen ? <X size={16} /> : <Menu size={16} />}
           </button>
         </div>
       </div>
 
       {/* Search */}
       <div className="search-box">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <Search size={14} />
         <input type="text" placeholder="Search channels..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
@@ -100,38 +102,53 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
       <div className="sidebar-scroll">
         <div className="sidebar-section">
           <div className="section-header">
-            <h3>Channels</h3>
+            <button className="section-header-clickable" onClick={toggleChannels}>
+              <ChevronDown size={12} className={`section-chevron ${!channelsOpen ? 'collapsed' : ''}`} />
+              <h3>Channels</h3>
+            </button>
             <button className="icon-btn" title="Create channel" onClick={onShowCreateChannel}>+</button>
           </div>
-          <ChannelList
-            channels={filteredChannels}
-            myChannelIds={myChannelIds}
-            currentChannelId={currentChannelId}
-            unreadCounts={state.unreadCounts}
-            activeCalls={state.activeCalls}
-            onSelect={handleSelectChannel}
-          />
+          {channelsOpen && (
+            <ChannelList
+              channels={filteredChannels}
+              myChannelIds={myChannelIds}
+              currentChannelId={currentChannelId}
+              unreadCounts={state.unreadCounts}
+              activeCalls={state.activeCalls}
+              onSelect={handleSelectChannel}
+            />
+          )}
         </div>
 
         <div className="sidebar-section">
           <div className="section-header">
-            <h3>Direct Messages</h3>
+            <button className="section-header-clickable" onClick={toggleDms}>
+              <ChevronDown size={12} className={`section-chevron ${!dmsOpen ? 'collapsed' : ''}`} />
+              <h3>Direct Messages</h3>
+            </button>
           </div>
-          <DmList
-            channels={filteredDms}
-            currentChannelId={currentChannelId}
-            unreadCounts={state.unreadCounts}
-            username={username || ''}
-            onSelect={handleSelectChannel}
-          />
+          {dmsOpen && (
+            <DmList
+              channels={filteredDms}
+              currentChannelId={currentChannelId}
+              unreadCounts={state.unreadCounts}
+              username={username || ''}
+              onSelect={handleSelectChannel}
+            />
+          )}
         </div>
 
         <div className="sidebar-section">
           <div className="section-header">
-            <h3>Team</h3>
+            <button className="section-header-clickable" onClick={toggleTeam}>
+              <ChevronDown size={12} className={`section-chevron ${!teamOpen ? 'collapsed' : ''}`} />
+              <h3>Team</h3>
+            </button>
             <span className="badge">{onlineUsers.size} online</span>
           </div>
-          <OnlineList onlineUsers={onlineUsers} currentUserId={state.userId} />
+          {teamOpen && (
+            <OnlineList onlineUsers={onlineUsers} currentUserId={state.userId} />
+          )}
         </div>
       </div>
 
@@ -147,22 +164,31 @@ export default function Sidebar({ isOpen, onToggle, onShowCreateChannel, onShowI
           </div>
           <div className="sidebar-user-info">
             <span className="sidebar-user-name">{state.displayName || username}</span>
-            <span className="sidebar-user-label">Online</span>
+            <span className="sidebar-user-label" onClick={(e) => { e.stopPropagation(); setShowStatusPicker(true); }} style={{ cursor: 'pointer' }}>
+              {state.allUsers.find((u) => u.id === state.userId)?.status_emoji || ''}{' '}
+              {state.allUsers.find((u) => u.id === state.userId)?.status_text || 'Online'}
+            </span>
           </div>
         </div>
         <button className="theme-toggle" title="Toggle theme" onClick={(e) => { e.stopPropagation(); toggleTheme(); }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-          </svg>
+          <Sun size={15} />
         </button>
         <button className="sidebar-action-btn" title="Settings" onClick={() => setShowSettings(true)}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <Settings size={15} />
         </button>
       </div>
 
       {showSettings && createPortal(
         <SettingsModal onClose={() => setShowSettings(false)} onShowInviteCode={onShowInviteCode} />,
         document.body
+      )}
+      {showStatusPicker && (
+        <StatusPicker
+          open={showStatusPicker}
+          onClose={() => setShowStatusPicker(false)}
+          currentEmoji={state.allUsers.find((u) => u.id === state.userId)?.status_emoji}
+          currentText={state.allUsers.find((u) => u.id === state.userId)?.status_text}
+        />
       )}
     </aside>
   );

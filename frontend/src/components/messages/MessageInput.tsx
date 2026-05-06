@@ -4,14 +4,16 @@ import { useAppState } from '../../context/AppContext';
 import { api } from '../../api/client';
 import { avatarColor, avatarInitial } from '../../utils/colors';
 import EmojiPicker from './EmojiPicker';
+import { SendHorizontal, Code2, Link2, List, Paperclip, Smile } from 'lucide-react';
 
 interface MessageInputProps {
   send: (msg: object) => void;
   quotePrefix?: string;
   onClearQuote?: () => void;
+  onEditLast?: () => void;
 }
 
-export default function MessageInput({ send, quotePrefix, onClearQuote }: MessageInputProps) {
+export default function MessageInput({ send, quotePrefix, onClearQuote, onEditLast }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -116,6 +118,13 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
         setMentionQuery(null);
         return;
       }
+    }
+
+    // Up arrow on empty input: edit last own message
+    if (e.key === 'ArrowUp' && !content.trim() && onEditLast) {
+      e.preventDefault();
+      onEditLast();
+      return;
     }
 
     // Enter without Shift = submit; Shift+Enter = newline
@@ -241,7 +250,7 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
               onKeyDown={handleKeyDown}
             />
             <button type="submit" className="send-btn" style={{ margin: '4px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              <SendHorizontal size={18} />
             </button>
           </form>
           {/* Markdown toolbar */}
@@ -252,20 +261,18 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
             <div className="md-toolbar-separator" />
             <button type="button" className="md-toolbar-btn" title="Code" onClick={() => insertMd('`')} style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>&lt;/&gt;</button>
             <button type="button" className="md-toolbar-btn" title="Code block" onClick={() => insertMd('```\n', '\n```')}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <Code2 size={14} />
             </button>
             <div className="md-toolbar-separator" />
             <button type="button" className="md-toolbar-btn" title="Link" onClick={() => insertMd('[', '](url)')}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              <Link2 size={14} />
             </button>
             <button type="button" className="md-toolbar-btn" title="Bulleted list" onClick={() => insertMd('- ', '')}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
+              <List size={14} />
             </button>
             <div className="md-toolbar-separator" />
             <button type="button" className="md-toolbar-btn" title={uploading ? 'Uploading...' : 'Attach file'} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-              </svg>
+              <Paperclip size={14} />
             </button>
             <button
               ref={emojiButtonRef}
@@ -274,9 +281,7 @@ export default function MessageInput({ send, quotePrefix, onClearQuote }: Messag
               title="Emoji"
               onClick={() => setShowComposerEmoji(!showComposerEmoji)}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
-              </svg>
+              <Smile size={14} />
             </button>
             <input
               ref={fileInputRef}

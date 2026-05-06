@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useMessages } from '../../hooks/useMessages';
 import { useAppState } from '../../context/AppContext';
 import MessageItem from './MessageItem';
+import UnreadDivider from './UnreadDivider';
 import type { MessageData } from '../../api/types';
+import { MessageSquare } from 'lucide-react';
 
 function formatDate(date: Date): string {
   const today = new Date();
@@ -37,15 +39,17 @@ export default function MessageList({ onOpenThread, onQuoteReply }: Props) {
     return (
       <div className="messages">
         <div className="empty-state">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.2, marginBottom: 12 }}>
-            <rect x="4" y="8" width="40" height="28" rx="6" stroke="currentColor" strokeWidth="2"/>
-            <path d="M14 20h20M14 26h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+          <MessageSquare size={48} strokeWidth={1} style={{ opacity: 0.2, marginBottom: 12 }} />
           <p>Select a channel to start chatting</p>
         </div>
       </div>
     );
   }
+
+  // Determine unread divider position
+  const lastReadTs = state.lastReadTimestamps.get(state.currentChannelId);
+  const unreadCount = state.unreadCounts.get(state.currentChannelId) || 0;
+  let unreadDividerInserted = false;
 
   return (
     <div className="messages">
@@ -64,6 +68,15 @@ export default function MessageList({ onOpenThread, onQuoteReply }: Props) {
           const prevDate = prev ? new Date(prev.timestamp) : null;
           const showDateDivider = !prevDate || msgDate.toDateString() !== prevDate.toDateString();
 
+          // Show unread divider before first unread message
+          let showUnread = false;
+          if (!unreadDividerInserted && lastReadTs && unreadCount > 0) {
+            if (msg.timestamp > lastReadTs && msg.user_id !== state.userId) {
+              showUnread = true;
+              unreadDividerInserted = true;
+            }
+          }
+
           return (
             <div key={msg.id}>
               {showDateDivider && (
@@ -71,6 +84,7 @@ export default function MessageList({ onOpenThread, onQuoteReply }: Props) {
                   <span>{formatDate(msgDate)}</span>
                 </div>
               )}
+              {showUnread && <UnreadDivider channelId={state.currentChannelId!} />}
               <MessageItem
                 message={msg}
                 isOwn={msg.user_id === state.userId}

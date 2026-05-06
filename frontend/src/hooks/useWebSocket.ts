@@ -225,6 +225,25 @@ export function useWebSocket() {
           rtcHandlerRef.current?.(msg.from_user, msg.signal_type, msg.data);
           break;
 
+        case 'message_edited':
+          dispatch({
+            type: 'EDIT_MESSAGE',
+            channelId: msg.channel_id,
+            messageId: msg.message_id,
+            content: msg.content,
+            editedAt: msg.edited_at,
+          });
+          break;
+
+        case 'user_status_changed':
+          dispatch({
+            type: 'USER_STATUS_CHANGED',
+            userId: msg.user_id,
+            statusEmoji: msg.status_emoji,
+            statusText: msg.status_text,
+          });
+          break;
+
         case 'pong':
           break;
 

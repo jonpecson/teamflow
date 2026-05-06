@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../../api/client';
+import { Smile, MessageSquare, Bookmark, MoreHorizontal, Pencil } from 'lucide-react';
 
 interface Props {
   messageId: string;
@@ -7,9 +8,10 @@ interface Props {
   onReply: () => void;
   onQuoteReply: () => void;
   onShowEmojiPicker: (e: React.MouseEvent) => void;
+  onEdit?: () => void;
 }
 
-export default function MessageActions({ messageId, isOwn, onReply, onQuoteReply, onShowEmojiPicker }: Props) {
+export default function MessageActions({ messageId, isOwn, onReply, onQuoteReply, onShowEmojiPicker, onEdit }: Props) {
   const [showMore, setShowMore] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -51,25 +53,22 @@ export default function MessageActions({ messageId, isOwn, onReply, onQuoteReply
   return (
     <div className="msg-actions">
       <button className="msg-action-btn" title="React" onClick={onShowEmojiPicker}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
-        </svg>
+        <Smile size={18} />
       </button>
+      {isOwn && onEdit && (
+        <button className="msg-action-btn" title="Edit" onClick={onEdit}>
+          <Pencil size={18} />
+        </button>
+      )}
       <button className="msg-action-btn" title="Reply in Thread" onClick={onReply}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-        </svg>
+        <MessageSquare size={18} />
       </button>
       <button className="msg-action-btn" title="Bookmark" onClick={handleBookmark}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-        </svg>
+        <Bookmark size={18} />
       </button>
       <div style={{ position: 'relative' }} ref={menuRef}>
         <button className="msg-action-btn" title="More" onClick={() => setShowMore(!showMore)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-          </svg>
+          <MoreHorizontal size={18} />
         </button>
         {showMore && (
           <div className="msg-more-menu">

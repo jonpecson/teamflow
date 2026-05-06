@@ -4,6 +4,7 @@ import { api } from '../../api/client';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
 import { avatarColor, avatarInitial } from '../../utils/colors';
 import MfaSetup from './MfaSetup';
+import { Pencil, Lock, UserPlus, LogOut, ChevronRight } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
@@ -124,10 +125,7 @@ export default function SettingsModal({ onClose, onShowInviteCode }: Props) {
                 <div className="settings-username">{shownName}</div>
                 <div className="settings-role">{shownRole}</div>
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.3 }}>
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
+              <Pencil size={16} style={{ opacity: 0.3 }} />
             </div>
           )}
           <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
@@ -138,9 +136,7 @@ export default function SettingsModal({ onClose, onShowInviteCode }: Props) {
           <div className="settings-section-title">Security</div>
           <button className="settings-item" onClick={() => !mfaEnabled && setShowMfaSetup(true)} style={mfaEnabled ? { cursor: 'default' } : undefined}>
             <div className="settings-item-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={mfaEnabled ? 'var(--success)' : 'currentColor'} strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+              <Lock size={18} stroke={mfaEnabled ? 'var(--success)' : 'currentColor'} />
             </div>
             <div className="settings-item-content">
               <div className="settings-item-label">Two-Factor Authentication</div>
@@ -151,7 +147,7 @@ export default function SettingsModal({ onClose, onShowInviteCode }: Props) {
             {mfaEnabled ? (
               <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600, whiteSpace: 'nowrap' }}>Active</span>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.3 }}><polyline points="9 18 15 12 9 6"/></svg>
+              <ChevronRight size={16} style={{ opacity: 0.3 }} />
             )}
           </button>
         </div>
@@ -161,16 +157,13 @@ export default function SettingsModal({ onClose, onShowInviteCode }: Props) {
           <div className="settings-section-title">Team</div>
           <button className="settings-item" onClick={() => { onClose(); onShowInviteCode(); }}>
             <div className="settings-item-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
-                <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
-              </svg>
+              <UserPlus size={18} />
             </div>
             <div className="settings-item-content">
               <div className="settings-item-label">Invite Team Members</div>
               <div className="settings-item-desc">Generate invite codes for your team</div>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.3 }}><polyline points="9 18 15 12 9 6"/></svg>
+            <ChevronRight size={16} style={{ opacity: 0.3 }} />
           </button>
         </div>
 
@@ -178,10 +171,7 @@ export default function SettingsModal({ onClose, onShowInviteCode }: Props) {
         <div className="settings-section">
           <button className="settings-item settings-item-danger" onClick={() => { logout(); onClose(); }}>
             <div className="settings-item-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-                <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
+              <LogOut size={18} />
             </div>
             <div className="settings-item-content">
               <div className="settings-item-label">Sign Out</div>

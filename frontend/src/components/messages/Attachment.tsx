@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { AttachmentData } from '../../api/types';
+import { Download } from 'lucide-react';
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -54,9 +55,7 @@ export default function Attachment({ attachment }: { attachment: AttachmentData 
         <span className="attachment-file-name">{attachment.file_name}</span>
         <span className="attachment-file-size">{formatSize(attachment.file_size)}</span>
       </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, opacity: 0.4 }}>
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
+      <Download size={16} style={{ flexShrink: 0, opacity: 0.4 }} />
     </a>
   );
 }

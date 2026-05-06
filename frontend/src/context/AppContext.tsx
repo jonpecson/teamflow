@@ -24,7 +24,7 @@ export interface AppState {
   messages: Map<string, MessageData[]>;
 
   // Users
-  allUsers: { id: string; username: string }[];
+  allUsers: { id: string; username: string; status_emoji?: string | null; status_text?: string | null }[];
   onlineUsers: Map<string, string>; // userId -> username
 
   // Calls
@@ -36,6 +36,7 @@ export interface AppState {
 
   // Unread
   unreadCounts: Map<string, number>;
+  lastReadTimestamps: Map<string, string>; // channelId -> timestamp
 
   // Typing
   typingUsers: Map<string, Map<string, number>>; // channelId -> Map<username, timestamp>
@@ -59,7 +60,7 @@ export type AppAction =
   | { type: 'SELECT_CHANNEL'; channelId: string }
   | { type: 'SET_MESSAGES'; channelId: string; messages: MessageData[] }
   | { type: 'ADD_MESSAGE'; message: MessageData }
-  | { type: 'SET_USERS'; users: { id: string; username: string }[] }
+  | { type: 'SET_USERS'; users: { id: string; username: string; status_emoji?: string | null; status_text?: string | null }[] }
   | { type: 'SET_ONLINE_USERS'; users: OnlineUser[] }
   | { type: 'USER_ONLINE'; userId: string; username: string }
   | { type: 'USER_OFFLINE'; userId: string }
@@ -81,7 +82,10 @@ export type AppAction =
   | { type: 'ADD_THREAD_REPLY'; channelId: string; parentId: string }
   | { type: 'CALL_MEDIA_UPDATE'; username: string; muted?: boolean; cameraOff?: boolean }
   | { type: 'CLEAR_CALL_MEDIA' }
-  | { type: 'SET_SIDEBAR_VIEW'; view: AppState['sidebarView'] };
+  | { type: 'SET_SIDEBAR_VIEW'; view: AppState['sidebarView'] }
+  | { type: 'EDIT_MESSAGE'; channelId: string; messageId: string; content: string; editedAt: string }
+  | { type: 'SET_LAST_READ'; channelId: string; timestamp: string }
+  | { type: 'USER_STATUS_CHANGED'; userId: string; statusEmoji: string | null; statusText: string | null };
 
 const initialState: AppState = {
   token: localStorage.getItem('token'),
@@ -105,6 +109,7 @@ const initialState: AppState = {
   cameraEnabled: false,
   callStartTime: null,
   unreadCounts: new Map(),
+  lastReadTimestamps: new Map(),
   typingUsers: new Map(),
   callParticipantMedia: new Map(),
   sidebarView: null,
@@ -176,8 +181,16 @@ function appReducer(state: AppState, action: AppAction): AppState {
       ids.delete(action.channelId);
       return { ...state, myChannelIds: ids };
     }
-    case 'SELECT_CHANNEL':
-      return { ...state, currentChannelId: action.channelId, sidebarView: null };
+    case 'SELECT_CHANNEL': {
+      // Mark previous channel as read
+      const timestamps = new Map(state.lastReadTimestamps);
+      if (state.currentChannelId) {
+        timestamps.set(state.currentChannelId, new Date().toISOString());
+      }
+      const counts = new Map(state.unreadCounts);
+      counts.delete(action.channelId);
+      return { ...state, currentChannelId: action.channelId, sidebarView: null, lastReadTimestamps: timestamps, unreadCounts: counts };
+    }
     case 'SET_MESSAGES': {
       const msgs = new Map(state.messages);
       msgs.set(action.channelId, action.messages);
@@ -336,6 +349,29 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, callParticipantMedia: new Map() };
     case 'SET_SIDEBAR_VIEW':
       return { ...state, sidebarView: action.view, currentChannelId: action.view ? null : state.currentChannelId };
+    case 'EDIT_MESSAGE': {
+      const msgs = new Map(state.messages);
+      const channelMsgs = msgs.get(action.channelId);
+      if (!channelMsgs) return state;
+      const updated = channelMsgs.map((m) => {
+        if (m.id !== action.messageId) return m;
+        return { ...m, content: action.content, edited_at: action.editedAt };
+      });
+      msgs.set(action.channelId, updated);
+      return { ...state, messages: msgs };
+    }
+    case 'SET_LAST_READ': {
+      const timestamps = new Map(state.lastReadTimestamps);
+      timestamps.set(action.channelId, action.timestamp);
+      return { ...state, lastReadTimestamps: timestamps };
+    }
+    case 'USER_STATUS_CHANGED': {
+      const users = state.allUsers.map((u) => {
+        if (u.id !== action.userId) return u;
+        return { ...u, status_emoji: action.statusEmoji, status_text: action.statusText };
+      });
+      return { ...state, allUsers: users };
+    }
     default:
       return state;
   }

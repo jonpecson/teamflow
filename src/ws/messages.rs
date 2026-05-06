@@ -187,6 +187,20 @@ pub enum ServerMsg {
         signal_type: String,
         data: serde_json::Value,
     },
+    // Message edited
+    MessageEdited {
+        message_id: Uuid,
+        channel_id: Uuid,
+        content: String,
+        edited_at: DateTime<Utc>,
+    },
+    // User status changed
+    UserStatusChanged {
+        user_id: Uuid,
+        username: String,
+        status_emoji: Option<String>,
+        status_text: Option<String>,
+    },
 }
 
 #[derive(Debug, Serialize, Clone)]

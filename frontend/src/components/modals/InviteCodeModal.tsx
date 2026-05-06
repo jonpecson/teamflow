@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api/client';
 import type { InviteCode } from '../../api/types';
+import { Trash2 } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
@@ -76,7 +77,7 @@ export default function InviteCodeModal({ onClose }: Props) {
               <div className="invite-code-actions">
                 <button className="copy-btn" onClick={() => handleCopy(code.code)}>Copy</button>
                 <button className="revoke-btn" onClick={() => handleRevoke(code.id)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>

@@ -215,3 +215,77 @@ pub async fn delete_message(
 
     Ok(StatusCode::OK)
 }
+
+#[derive(Deserialize)]
+pub struct EditMessageRequest {
+    pub content: String,
+}
+
+/// PUT /api/messages/:id — edit own message
+pub async fn edit_message(
+    State(state): State<AppState>,
+    claims: Claims,
+    Path(message_id): Path<Uuid>,
+    Json(req): Json<EditMessageRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let content = req.content.trim().to_string();
+    if content.is_empty() || content.len() > 4000 {
+        return Err(AppError::Validation("Content must be 1-4000 characters".into()));
+    }
+
+    // Only allow editing own messages
+    let row = sqlx::query_as::<_, (Uuid, Uuid)>(
+        "SELECT user_id, channel_id FROM messages WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(message_id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Message not found".into()))?;
+
+    if row.0 != claims.sub {
+        return Err(AppError::Auth("Can only edit your own messages".into()));
+    }
+
+    let now = Utc::now();
+
+    sqlx::query("UPDATE messages SET content = $1, edited_at = $2 WHERE id = $3")
+        .bind(&content)
+        .bind(now)
+        .bind(message_id)
+        .execute(&state.db)
+        .await?;
+
+    // HIPAA audit
+    crate::audit::AuditLogger::new(state.db.clone())
+        .log(Some(claims.sub), "message.edit", Some(&message_id.to_string()), None, None)
+        .await;
+
+    // Broadcast to channel members
+    let channel_id = row.1;
+    let members = sqlx::query_as::<_, (Uuid,)>(
+        "SELECT user_id FROM channel_members WHERE channel_id = $1",
+    )
+    .bind(channel_id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let edit_msg = ServerMsg::MessageEdited {
+        message_id,
+        channel_id,
+        content: content.clone(),
+        edited_at: now,
+    };
+
+    for (member_id,) in members {
+        if let Some(sender) = state.connections.get(&member_id) {
+            let _ = sender.send(edit_msg.clone());
+        }
+    }
+
+    Ok(Json(serde_json::json!({
+        "id": message_id,
+        "content": content,
+        "edited_at": now,
+    })))
+}

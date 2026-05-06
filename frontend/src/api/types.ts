@@ -21,6 +21,8 @@ export interface User {
 export interface OnlineUser {
   user_id: string;
   username: string;
+  status_emoji?: string | null;
+  status_text?: string | null;
 }
 
 export interface ReactionData {
@@ -49,6 +51,7 @@ export interface MessageData {
   avatar_url?: string;
   content: string;
   timestamp: string;
+  edited_at?: string;
   created_at?: string;
   parent_id?: string;
   reply_count?: number;
@@ -251,6 +254,22 @@ export interface WsPong {
   type: 'pong';
 }
 
+export interface WsMessageEdited {
+  type: 'message_edited';
+  message_id: string;
+  channel_id: string;
+  content: string;
+  edited_at: string;
+}
+
+export interface WsUserStatusChanged {
+  type: 'user_status_changed';
+  user_id: string;
+  username: string;
+  status_emoji: string | null;
+  status_text: string | null;
+}
+
 export type WsServerMsg =
   | WsMessage
   | WsPresence
@@ -269,6 +288,8 @@ export type WsServerMsg =
   | WsReactionUpdate
   | WsThreadReply
   | WsMessageDeleted
+  | WsMessageEdited
+  | WsUserStatusChanged
   | WsRtcSignal
   | WsError
   | WsPong;

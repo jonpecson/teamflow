@@ -4,6 +4,7 @@ import { useAppState } from '../../context/AppContext';
 import { avatarColor, avatarInitial } from '../../utils/colors';
 import { linkify, escapeMessage } from '../../utils/links';
 import type { MessageData } from '../../api/types';
+import { SendHorizontal } from 'lucide-react';
 
 interface Props {
   parentMessage: MessageData;
@@ -143,7 +144,7 @@ export default function ThreadPanel({ parentMessage, send, onClose }: Props) {
           }}
         />
         <button type="submit" className="send-btn" style={{ width: 36, height: 36 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          <SendHorizontal size={16} />
         </button>
       </form>
     </div>

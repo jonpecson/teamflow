@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMessages } from '../../hooks/useMessages';
 import { useAppState } from '../../context/AppContext';
 import MessageItem from '../messages/MessageItem';
+import { SendHorizontal, ChevronLeft } from 'lucide-react';
 
 interface Props {
   send: (msg: object) => void;
@@ -35,9 +36,7 @@ export default function HuddleChatPanel({ send, onClose }: Props) {
     <div className="huddle-chat-panel">
       <div className="huddle-chat-header">
         <button className="huddle-chat-back" onClick={onClose} title="Back to call">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
+          <ChevronLeft size={18} />
           <span>Call</span>
         </button>
         <h4>Chat</h4>
@@ -74,7 +73,7 @@ export default function HuddleChatPanel({ send, onClose }: Props) {
           onChange={(e) => setContent(e.target.value)}
         />
         <button type="submit" className="huddle-chat-send">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          <SendHorizontal size={16} />
         </button>
       </form>
     </div>

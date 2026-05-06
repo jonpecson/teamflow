@@ -22,6 +22,7 @@ import { api } from '../../api/client';
 import OnboardingModal from '../settings/OnboardingModal';
 import SidebarViewPanel from './SidebarViewPanel';
 import IncomingCallBanner from '../calls/IncomingCallBanner';
+import CommandPalette from '../command/CommandPalette';
 import type { MessageData, ActiveCall } from '../../api/types';
 
 export default function AppLayout() {
@@ -41,6 +42,7 @@ export default function AppLayout() {
   const [threadMessage, setThreadMessage] = useState<MessageData | null>(null);
   const [quotePrefix, setQuotePrefix] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const dragCounterRef = useRef(0);
 
   useEffect(() => {
@@ -57,6 +59,30 @@ export default function AppLayout() {
     setShowDetail(false);
     setThreadMessage(null);
   }, [currentChannelId]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+K: Toggle command palette
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+      }
+      // Cmd+Shift+\: Toggle sidebar
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '\\') {
+        e.preventDefault();
+        setSidebarOpen((prev) => !prev);
+      }
+      // Escape: Close panels
+      if (e.key === 'Escape') {
+        if (showCommandPalette) setShowCommandPalette(false);
+        else if (showDetail) setShowDetail(false);
+        else if (threadMessage) setThreadMessage(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCommandPalette, showDetail, threadMessage]);
 
   const handleOpenThread = useCallback((msg: MessageData) => {
     setThreadMessage(msg);
@@ -206,9 +232,6 @@ export default function AppLayout() {
                 )}
               </div>
             )}
-            {isInCallOnCurrentChannel && isMember && (
-              <MessageInput send={send} quotePrefix={quotePrefix} onClearQuote={() => setQuotePrefix('')} />
-            )}
           </>
         )}
       </main>
@@ -219,6 +242,7 @@ export default function AppLayout() {
       {showCreateChannel && <CreateChannelModal onClose={() => setShowCreateChannel(false)} />}
       {showInvite && currentChannelId && <InviteModal channelId={currentChannelId} onClose={() => setShowInvite(false)} />}
       {showInviteCode && <InviteCodeModal onClose={() => setShowInviteCode(false)} />}
+      <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
       {!!state.token && !state.onboarded && (
         <OnboardingModal
           username={state.username || ''}
